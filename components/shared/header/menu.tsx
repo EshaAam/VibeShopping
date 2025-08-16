@@ -3,6 +3,7 @@ import ModeToggle from "./mode-toggle";
 import { EllipsisVertical, ShoppingCart, UserIcon } from "lucide-react";
 import Link from "next/link";
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import UserButton from "./user-button";
 
 const Menu = () => {
     return (<div className="flex justify-end gap-3">
@@ -14,12 +15,13 @@ const Menu = () => {
               Cart
             </Link>
           </Button>
-          <Button asChild>
+          {/* <Button asChild>
             <Link href="/sign-in">
               <UserIcon />
               Login
             </Link>
-          </Button>
+          </Button> */}
+          <UserButton />
 
         </nav>
         {/* for small screen navbar */}
@@ -37,12 +39,13 @@ const Menu = () => {
           Cart
         </Link>
       </Button>
-       <Button asChild>
+       {/* <Button asChild>
         <Link href='/sign-in'>
           <UserIcon />
           Sign In
         </Link>
-      </Button>
+      </Button> */}
+      <UserButton />
       <SheetDescription></SheetDescription>
     </SheetContent>
   </Sheet>
