@@ -90,7 +90,7 @@ const SignUpForm = () => {
             className='link'
             href={`/sign-in?callbackUrl=${callbackUrl}`}
           >
-            Sign In
+            <b>Sign In</b>
           </Link>
         </div>
       </div>
