@@ -1,27 +1,29 @@
 // import { error } from 'console';
-import NextAuth, { NextAuthConfig } from 'next-auth';
-import { prisma } from './db/prisma';
-import {PrismaAdapter} from '@auth/prisma-adapter'
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { compareSync } from 'bcrypt-ts-edge';
+import NextAuth, { NextAuthConfig } from "next-auth";
+import { prisma } from "./db/prisma";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { compareSync } from "bcrypt-ts-edge";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 export const config = {
-    pages: {
-        signIn: '/sign-in',
-        error: '/error'
-    },
-    session: {
-        strategy: 'jwt',
-        maxAge: 30 * 24 * 60 * 60 // 30 days
-    },
-    adapter: PrismaAdapter(prisma),
-    providers: [
+  pages: {
+    signIn: "/sign-in",
+    error: "/error",
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  adapter: PrismaAdapter(prisma),
+  providers: [
     CredentialsProvider({
       credentials: {
         email: {
-          type: 'email',
+          type: "email",
         },
-        password: { type: 'password' },
+        password: { type: "password" },
       },
       async authorize(credentials) {
         if (credentials == null) return null;
@@ -54,28 +56,27 @@ export const config = {
     }),
   ],
   callbacks: {
-    async session ({session,  user, trigger, token} : any) {
-        //setting the user id on the session object
-        session.user.id = token.sub; 
-        session.user.name = token.name;
-        session.user.role = token.role;
-        console.log(token);
-        
-        //if there becomes a update then set the name in the session
-        if(trigger == 'update') {
-          session.user.name = user.name;
-        }
-        return session;
+    async session({ session, user, trigger, token }: any) {
+      //setting the user id on the session object from the jwt token
+      session.user.id = token.sub;
+      session.user.name = token.name;
+      session.user.role = token.role;
+      console.log(token);
 
+      //if there becomes a update then set the name in the session
+      if (trigger == "update") {
+        session.user.name = user.name;
+      }
+      return session;
     },
-     async jwt({ token, user, trigger, session }: any) {
+    async jwt({ token, user, trigger, session }: any) {
       // Assign user fields to token
       if (user) {
         token.role = user.role;
 
         // If user has no name, use email as their default name
-        if (user.name === 'NO_NAME') {
-          token.name = user.email!.split('@')[0];
+        if (user.name === "NO_NAME") {
+          token.name = user.email!.split("@")[0];
 
           // Update the user in the database with the new name
           await prisma.user.update({
@@ -86,13 +87,37 @@ export const config = {
       }
 
       // Handle session updates (e.g., name change)
-      if (session?.user.name && trigger === 'update') {
+      if (session?.user.name && trigger === "update") {
         token.name = session.user.name;
       }
 
       return token;
     },
-  },
 
+    //for guest shopping use sessionCartId
+    authorized({ request, auth }: any) {
+      if (!request.cookies.get("sessionCartId")) {
+        //generate cart cookie
+        const sessionCartId = crypto.randomUUID();
+        // Clone the request headers
+        const newRequestHeaders = new Headers(request.headers);
+
+        // Create a new response and add the new headers
+        const response = NextResponse.next({
+          request: {
+            headers: newRequestHeaders,
+          },
+        });
+
+        // Set the newly generated sessionCartId in the response cookies
+        response.cookies.set("sessionCartId", sessionCartId);
+
+        // Return the response with the sessionCartId set
+        return response;
+      } else {
+        return true;
+      }
+    },
+  },
 } satisfies NextAuthConfig;
-export const {handlers, auth, signIn, signOut} = NextAuth(config);
+export const { handlers, auth, signIn, signOut } = NextAuth(config);
