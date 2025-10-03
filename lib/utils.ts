@@ -44,6 +44,7 @@ export function formatError(error: any): string {
   }
 }
 
+// Round to 2 decimal places
 export const round2 = (value: number | string) => {
   if (typeof value === 'number') {
     return Math.round((value + Number.EPSILON) * 100) / 100; // avoid rounding errors
