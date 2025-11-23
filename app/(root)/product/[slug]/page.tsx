@@ -6,6 +6,8 @@ import { getProductBySlug } from "@/lib/actions/product.actions";
 import { Badge } from "@/components/ui/badge";
 import ProductImages from "@/components/shared/product/product-images";
 import AddToCart from "@/components/shared/product/add-to-cart";
+import { getMyCart } from "@/lib/actions/cart.actions";
+import { round2 } from "@/lib/utils";
 
 const ProductDetailsPage = async (props: {
   params: Promise<{ slug: string }>;
@@ -15,6 +17,8 @@ const ProductDetailsPage = async (props: {
 
   const product = await getProductBySlug(slug);
   if (!product) notFound();
+
+  const cart = await getMyCart();
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -77,14 +81,14 @@ const ProductDetailsPage = async (props: {
               </div>
               {product.stock > 0 && (
                 <AddToCart
+                  cart={cart}
                   item={{
                     productId: product.id,
                     name: product.name,
                     slug: product.slug,
-                    price: product.price,
+                    price: round2(product.price).toFixed(2),
                     qty: 1,
                     image: product.images?.[0] || "",
-
                   }}
                 />
               )}

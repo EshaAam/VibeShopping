@@ -39,7 +39,7 @@ const SignUpPage = async (props: {
           <Link href='/' className='flex-center'>
             <Image
               priority={true}
-              src='/images/logo.svg'
+              src='/images/logo.png'
               width={100}
               height={100}
               alt={`${APP_NAME} logo`}
