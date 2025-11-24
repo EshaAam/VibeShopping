@@ -40,12 +40,27 @@ const ShippingAddressForm = ({
 
   const [isPending, startTransition] = useTransition();
 
-  const onSubmit: SubmitHandler<z.infer<typeof shippingAddressSchema>> = async (data) => {
-    // TODO: Implement submit handler
+  const onSubmit: SubmitHandler<z.infer<typeof shippingAddressSchema>> = async (
+    values
+  ) => {
+    startTransition(async () => {
+      const res = await updateUserAddress(values);
+
+      if (!res.success) {
+        toast({
+          variant: 'destructive',
+          description: res.message,
+        });
+        return;
+      }
+
+      router.push('/payment-method');
+    });
   };
 
   return (
     <>
+      <CheckoutSteps current={1} />
       <div className='max-w-md mx-auto space-y-4'>
         <h1 className='h2-bold mt-4'>Shipping Address</h1>
         <p className='text-sm text-muted-foreground'>
