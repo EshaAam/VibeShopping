@@ -61,7 +61,7 @@ export const config = {
       session.user.id = token.sub;
       session.user.name = token.name;
       session.user.role = token.role;
-      console.log(token);
+      // console.log(token);
 
       //if there becomes a update then set the name in the session
       if (trigger == "update") {
@@ -121,6 +121,23 @@ export const config = {
 
     //for guest shopping use sessionCartId
     authorized({ request, auth }: any) {
+      // Array of regex patterns of protected paths
+      const protectedPaths = [
+        /\/shipping-address/,
+        /\/payment-method/,
+        /\/place-order/,
+        /\/profile/,
+        /\/user\/(.*)/,
+        /\/order\/(.*)/,
+        /\/admin/,
+      ];
+
+      // Get pathname from the req URL object
+      const { pathname } = request.nextUrl;
+
+      // Check if user is not authenticated and on a protected path
+      if (!auth && protectedPaths.some((p) => p.test(pathname))) return false;
+
       if (!request.cookies.get("sessionCartId")) {
         //generate cart cookie
         const sessionCartId = crypto.randomUUID();

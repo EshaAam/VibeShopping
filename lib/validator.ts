@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { formatNumberWithDecimal } from "./utils";
+import { PAYMENT_METHODS } from "./constants";
 // Schema for inserting a product
 // This schema defines the structure and validation rules for product data
 // It ensures that all required fields are present and meet specified criteria
@@ -24,6 +25,7 @@ export const insertProductSchema = z.object({
   isFeatured: z.boolean(),
   banner: z.string().nullable(),
   price: currency,
+  
 });
 
 //schema for signing in users
@@ -79,3 +81,13 @@ export const shippingAddressSchema = z.object({
   lat: z.number().optional(),
   lng: z.number().optional(),
 });
+
+//Payment Schema
+export const paymentMethodSchema = z
+  .object({
+    type: z.string().min(1, 'Pyament method is required'),
+  })
+  .refine((data) => PAYMENT_METHODS.includes(data.type), {
+    path: ['type'],
+    message: 'Invalid payment method',
+  });

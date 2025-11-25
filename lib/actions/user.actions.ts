@@ -1,6 +1,6 @@
 "use server";
 import { signIn, signOut, auth } from "@/auth";
-import { signInFormSchema, signUpFormSchema, shippingAddressSchema } from "../validator";
+import { signInFormSchema, signUpFormSchema, shippingAddressSchema, paymentMethodSchem } from "../validator";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { hashSync } from "bcrypt-ts-edge";
 import { prisma } from "@/db/prisma";
