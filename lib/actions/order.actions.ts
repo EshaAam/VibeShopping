@@ -88,3 +88,29 @@ export async function getOrderById(orderId: string) {
   });
   return convertToPlainObject(data);
 }
+
+// Update order to paid (Mock Payment)
+export async function updateOrderToPaid(orderId: string) {
+  try {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        isPaid: true,
+        paidAt: new Date(),
+        paymentResult: {
+          id: `MOCK_${Date.now()}`,
+          status: 'COMPLETED',
+          email_address: 'customer@example.com',
+          pricePaid: '0.00',
+        },
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Payment processed successfully',
+    };
+  } catch (error) {
+    return { success: false, message: formatError(error) };
+  }
+}

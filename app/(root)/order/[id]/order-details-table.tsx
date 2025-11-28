@@ -15,6 +15,11 @@ import { formatCurrency, formatDateTime, formatId } from '@/lib/utils';
 import { Order } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { updateOrderToPaid } from '@/lib/actions/order.actions';
+import { useTransition } from 'react';
+import { CreditCard, Loader, Wallet } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const OrderDetailsTable = ({ order }: { order: Order }) => {
   const {
@@ -32,6 +37,29 @@ const OrderDetailsTable = ({ order }: { order: Order }) => {
   } = order;
 
   const { toast } = useToast();
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  const handlePayment = async () => {
+    startTransition(async () => {
+      const res = await updateOrderToPaid(order.id);
+
+      if (!res.success) {
+        toast({
+          variant: 'destructive',
+          description: res.message,
+        });
+        return;
+      }
+
+      toast({
+        description: `✅ Payment successful via ${paymentMethod}!`,
+      });
+
+      // Refresh the page to show updated payment status
+      router.refresh();
+    });
+  };
 
   return (
     <>
@@ -129,6 +157,37 @@ const OrderDetailsTable = ({ order }: { order: Order }) => {
                 <div>Total</div>
                 <div>{formatCurrency(totalPrice)}</div>
               </div>
+
+              {!isPaid && (
+                <div className='mt-4'>
+                  <Button
+                    onClick={handlePayment}
+                    disabled={isPending}
+                    className='w-full'
+                    size='lg'
+                  >
+                    {isPending ? (
+                      <>
+                        <Loader className='w-4 h-4 mr-2 animate-spin' />
+                        Processing Payment...
+                      </>
+                    ) : (
+                      <>
+                        {paymentMethod === 'PayPal' && (
+                          <CreditCard className='w-4 h-4 mr-2' />
+                        )}
+                        {paymentMethod === 'Bkash' && (
+                          <Wallet className='w-4 h-4 mr-2' />
+                        )}
+                        Pay with {paymentMethod}
+                      </>
+                    )}
+                  </Button>
+                  <p className='text-xs text-muted-foreground text-center mt-2'>
+                    🔒 Mock payment for demonstration purposes
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
