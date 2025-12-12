@@ -1,6 +1,6 @@
 "use server";
 import { signIn, signOut, auth } from "@/auth";
-import { signInFormSchema, signUpFormSchema, shippingAddressSchema, paymentMethodSchema, updateProfileSchema } from "../validator";
+import { signInFormSchema, signUpFormSchema, shippingAddressSchema, paymentMethodSchema, updateProfileSchema, updateUserSchema } from "../validator";
 import { z } from 'zod';
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { hashSync } from "bcrypt-ts-edge";
@@ -8,6 +8,7 @@ import { prisma } from "@/db/prisma";
 import { formatError } from "../utils";
 import { ShippingAddress } from "@/types";
 import { PAGE_SIZE } from '@/lib/constants';
+import { revalidatePath } from 'next/cache';
 
 export async function signInWithCredentials(
   prevState: unknown,
@@ -197,4 +198,42 @@ export async function getAllUsers({
     data,
     totalPages: Math.ceil(dataCount / limit),
   };
+}
+
+// Delete user by ID
+export async function deleteUser(id: string) {
+  try {
+    await prisma.user.delete({ where: { id } });
+
+    revalidatePath('/admin/users');
+
+    return {
+      success: true,
+      message: 'User deleted successfully',
+    };
+  } catch (error) {
+    return { success: false, message: formatError(error) };
+  }
+}
+
+// Update user
+export async function updateUser(user: z.infer<typeof updateUserSchema>) {
+  try {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        name: user.name,
+        role: user.role,
+      },
+    });
+
+    revalidatePath('/admin/users');
+
+    return {
+      success: true,
+      message: 'User updated successfully',
+    };
+  } catch (error) {
+    return { success: false, message: formatError(error) };
+  }
 }
