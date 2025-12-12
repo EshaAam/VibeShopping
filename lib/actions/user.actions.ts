@@ -7,6 +7,7 @@ import { hashSync } from "bcrypt-ts-edge";
 import { prisma } from "@/db/prisma";
 import { formatError } from "../utils";
 import { ShippingAddress } from "@/types";
+import { PAGE_SIZE } from '@/lib/constants';
 
 export async function signInWithCredentials(
   prevState: unknown,
@@ -174,4 +175,26 @@ export async function updateProfile(user: { name: string; email: string }) {
   } catch (error) {
     return { success: false, message: formatError(error) };
   }
+}
+
+// Get all users
+export async function getAllUsers({
+  limit = PAGE_SIZE,
+  page,
+}: {
+  limit?: number;
+  page: number;
+}) {
+  const data = await prisma.user.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    skip: (page - 1) * limit,
+  });
+
+  const dataCount = await prisma.user.count();
+
+  return {
+    data,
+    totalPages: Math.ceil(dataCount / limit),
+  };
 }
