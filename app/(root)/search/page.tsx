@@ -32,6 +32,44 @@ const prices = [
 
 const ratings = [4, 3, 2, 1];
 
+const sortOrders = ['newest', 'lowest', 'highest', 'rating'];
+
+export async function generateMetadata(props: {
+  searchParams: Promise<{
+    q: string;
+    category: string;
+    price: string;
+    rating: string;
+  }>;
+}) {
+  const {
+    q = 'all',
+    category = 'all',
+    price = 'all',
+    rating = 'all',
+  } = await props.searchParams;
+
+  const isQuerySet = q && q !== 'all' && q.trim() !== '';
+  const isCategorySet = category && category !== 'all' && category.trim() !== '';
+  const isPriceSet = price && price !== 'all' && price.trim() !== '';
+  const isRatingSet = rating && rating !== 'all' && rating.trim() !== '';
+
+  if (isQuerySet || isCategorySet || isPriceSet || isRatingSet) {
+    return {
+      title: `Search ${
+        isQuerySet ? q : ''
+      }
+      ${isCategorySet ? `: Category ${category}` : ''}
+      ${isPriceSet ? `: Price ${price}` : ''}
+      ${isRatingSet ? `: Rating ${rating}` : ''}`,
+    };
+  } else {
+    return {
+      title: 'Search Products',
+    };
+  }
+}
+
 const SearchPage = async (props: {
   searchParams: Promise<{
     q?: string;
@@ -185,7 +223,18 @@ const SearchPage = async (props: {
               </Button>
             ) : null}
           </div>
-          <div>{/* SORTING HERE */}</div>
+          <div>
+            Sort by{' '}
+            {sortOrders.map((s) => (
+              <Link
+                key={s}
+                className={`mx-2   ${sort == s && 'font-bold'} `}
+                href={getFilterUrl({ s })}
+              >
+                {s}
+              </Link>
+            ))}
+          </div>
         </div>
 
         <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
