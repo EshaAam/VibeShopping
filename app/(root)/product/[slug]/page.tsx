@@ -10,6 +10,7 @@ import { getMyCart } from "@/lib/actions/cart.actions";
 import { round2 } from "@/lib/utils";
 import { auth } from '@/auth';
 import ReviewList from './review-list';
+import Rating from '@/components/shared/product/rating';
 
 const ProductDetailsPage = async (props: {
   params: Promise<{ slug: string }>;
@@ -46,9 +47,8 @@ const ProductDetailsPage = async (props: {
             <h1 className="text-3xl font-bold tracking-tight">
               {product.name}
             </h1>
-            <p className="text-sm text-muted-foreground">
-              {product.rating} out of {product.numReviews} reviews
-            </p>
+            <Rating value={Number(product.rating)} />
+            <p className="text-sm text-muted-foreground">{product.numReviews} reviews</p>
           </div>
 
           <div className="mt-4">
