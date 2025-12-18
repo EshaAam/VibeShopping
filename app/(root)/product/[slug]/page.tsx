@@ -8,6 +8,8 @@ import ProductImages from "@/components/shared/product/product-images";
 import AddToCart from "@/components/shared/product/add-to-cart";
 import { getMyCart } from "@/lib/actions/cart.actions";
 import { round2 } from "@/lib/utils";
+import { auth } from '@/auth';
+import ReviewList from './review-list';
 
 const ProductDetailsPage = async (props: {
   params: Promise<{ slug: string }>;
@@ -19,6 +21,9 @@ const ProductDetailsPage = async (props: {
   if (!product) notFound();
 
   const cart = await getMyCart();
+
+  const session = await auth();
+  const userId = session?.user?.id;
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -96,6 +101,15 @@ const ProductDetailsPage = async (props: {
           </Card>
         </div>
       </div>
+
+      <section className='mt-10'>
+        <h2 className='h2-bold  mb-5'>Customer Reviews</h2>
+        <ReviewList
+          productId={product.id}
+          productSlug={product.slug}
+          userId={userId || ''}
+        />
+      </section>
     </section>
   );
 };
