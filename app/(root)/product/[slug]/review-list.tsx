@@ -28,6 +28,8 @@ const ReviewList = ({
 }) => {
   const [reviews, setReviews] = useState<Review[]>([]);
 
+  const { toast } = useToast();
+
   useEffect(() => {
     /// Load reviews from the database
     const loadReviews = async () => {
@@ -40,7 +42,16 @@ const ReviewList = ({
 
   // Reload reviews when a review is submitted
   const reload = async () => {
-    console.log('review submitted');
+    try {
+      const res = await getReviews({ productId });
+      setReviews([...res.data]);
+    } catch (err) {
+      console.log(err);
+      toast({
+        variant: 'destructive',
+        description: 'Error in fetching reviews',
+      });
+    }
   };
 
   return (
