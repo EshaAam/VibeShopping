@@ -16,6 +16,10 @@
 # next.js
 /.next/
 /out/
+// ...existing code...
+.next
+.next/
+// ...existing code...
 
 # production
 /build
