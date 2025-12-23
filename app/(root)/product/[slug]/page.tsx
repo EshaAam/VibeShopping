@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import ProductImages from "@/components/shared/product/product-images";
 import AddToCart from "@/components/shared/product/add-to-cart";
 import { getMyCart } from "@/lib/actions/cart.actions";
+import { getMyWishlist } from "@/lib/actions/wishlist.actions";
 import { round2 } from "@/lib/utils";
 import { auth } from '@/auth';
 import ReviewList from './review-list';
 import Rating from '@/components/shared/product/rating';
+import AddToWishlist from '@/components/shared/product/add-to-wishlist';
 
 const ProductDetailsPage = async (props: {
   params: Promise<{ slug: string }>;
@@ -22,6 +24,7 @@ const ProductDetailsPage = async (props: {
   if (!product) notFound();
 
   const cart = await getMyCart();
+  const wishlist = await getMyWishlist();
 
   const session = await auth();
   const userId = session?.user?.id;
@@ -72,7 +75,19 @@ const ProductDetailsPage = async (props: {
                 <span className="text-sm font-medium text-muted-foreground">
                   Price
                 </span>
-                <ProductPrice value={Number(product.price)} />
+                <div className="flex items-center gap-2">
+                  <ProductPrice value={Number(product.price)} />
+                  <AddToWishlist
+                    wishlist={wishlist}
+                    item={{
+                      productId: product.id,
+                      name: product.name,
+                      slug: product.slug,
+                      price: round2(product.price).toFixed(2),
+                      image: product.images?.[0] || "",
+                    }}
+                  />
+                </div>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-muted-foreground">

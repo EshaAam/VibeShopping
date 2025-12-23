@@ -6,6 +6,7 @@ import {
   insertOrderItemSchema,
   insertOrderSchema,
   insertReviewSchema,
+  wishlistItemSchema,
 } from '@/lib/validator';
 import {z} from 'zod';
 
@@ -36,4 +37,15 @@ export type Review = z.infer<typeof insertReviewSchema> & {
   id: string;
   createdAt: Date;
   user?: { name: string };
+};
+
+export type WishlistItem = z.infer<typeof wishlistItemSchema>;
+
+export type Wishlist = {
+  id: string;
+  userId?: string | null;
+  sessionWishlistId?: string | null;
+  items: WishlistItem[];
+  createdAt: Date;
+  updatedAt: Date;
 };

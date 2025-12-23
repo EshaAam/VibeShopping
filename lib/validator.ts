@@ -145,3 +145,19 @@ export const insertReviewSchema = z.object({
     .min(1, 'Rating must be at least 1')
     .max(5, 'Rating must be at most 5'),
 });
+
+// Wishlist Item Schema
+export const wishlistItemSchema = z.object({
+  productId: z.string().min(1, 'Product ID is required'),
+  name: z.string().min(1, 'Name is required'),
+  slug: z.string().min(1, 'Slug is required'),
+  price: currency,
+  image: z.string().min(1, 'Image is required'),
+});
+
+// Insert Wishlist Schema
+export const insertWishlistSchema = z.object({
+  items: z.array(wishlistItemSchema),
+  userId: z.string().optional().nullable(),
+  sessionWishlistId: z.string().min(1, 'Session wishlist id is required'),
+});

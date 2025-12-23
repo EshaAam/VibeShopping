@@ -78,6 +78,7 @@ export const config = {
         if (trigger === 'signIn' || trigger === 'signUp') {
           const cookiesObject = await cookies();
           const sessionCartId = cookiesObject.get('sessionCartId')?.value;
+          const sessionWishlistId = cookiesObject.get('sessionWishlistId')?.value;
 
           if (sessionCartId) {
             const sessionCart = await prisma.cart.findFirst({
@@ -93,6 +94,26 @@ export const config = {
               // Assign the guest cart to the logged-in user
               await prisma.cart.update({
                 where: { id: sessionCart.id },
+                data: { userId: user.id },
+              });
+            }
+          }
+
+          // Handle wishlist merge on sign-in
+          if (sessionWishlistId) {
+            const sessionWishlist = await prisma.wishlist.findFirst({
+              where: { sessionWishlistId },
+            });
+
+            if (sessionWishlist) {
+              // Overwrite any existing user wishlist
+              await prisma.wishlist.deleteMany({
+                where: { userId: user.id },
+              });
+
+              // Assign the guest wishlist to the logged-in user
+              await prisma.wishlist.update({
+                where: { id: sessionWishlist.id },
                 data: { userId: user.id },
               });
             }
@@ -138,9 +159,11 @@ export const config = {
       // Check if user is not authenticated and on a protected path
       if (!auth && protectedPaths.some((p) => p.test(pathname))) return false;
 
-      if (!request.cookies.get("sessionCartId")) {
-        //generate cart cookie
-        const sessionCartId = crypto.randomUUID();
+      // Check if cookies need to be set
+      const hasCartCookie = request.cookies.get("sessionCartId");
+      const hasWishlistCookie = request.cookies.get("sessionWishlistId");
+
+      if (!hasCartCookie || !hasWishlistCookie) {
         // Clone the request headers
         const newRequestHeaders = new Headers(request.headers);
 
@@ -151,10 +174,18 @@ export const config = {
           },
         });
 
-        // Set the newly generated sessionCartId in the response cookies
-        response.cookies.set("sessionCartId", sessionCartId);
+        // Set cart cookie if not present
+        if (!hasCartCookie) {
+          const sessionCartId = crypto.randomUUID();
+          response.cookies.set("sessionCartId", sessionCartId);
+        }
 
-        // Return the response with the sessionCartId set
+        // Set wishlist cookie if not present
+        if (!hasWishlistCookie) {
+          const sessionWishlistId = crypto.randomUUID();
+          response.cookies.set("sessionWishlistId", sessionWishlistId);
+        }
+
         return response;
       } else {
         return true;

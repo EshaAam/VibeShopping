@@ -2,13 +2,29 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
 import ProductPrice from "./product-price";
- import { Product } from "@/types";
+import { Product } from "@/types";
 import Rating from './rating';
+import AddToWishlist from './add-to-wishlist';
+import { getMyWishlist } from '@/lib/actions/wishlist.actions';
 
 // display the products in a card
-const ProductCard = ({ product }: { product: Product }) => {
+const ProductCard = async ({ product }: { product: Product }) => {
+  const wishlist = await getMyWishlist();
+
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full max-w-sm relative">
+      <div className='absolute top-2 right-2 z-10'>
+        <AddToWishlist
+          wishlist={wishlist}
+          item={{
+            productId: product.id,
+            name: product.name,
+            slug: product.slug,
+            price: product.price,
+            image: product.images![0],
+          }}
+        />
+      </div>
       <CardHeader className="p-0 items-center">
         <Link href={`/product/${product.slug}`}>
           <Image
