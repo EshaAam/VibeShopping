@@ -19,6 +19,7 @@ export async function createUpdateReview(
     const review = insertReviewSchema.parse({
       ...data,
       userId: session?.user.id,
+      title: session?.user.name || 'Anonymous User',
     });
 
     // Get the product being reviewed

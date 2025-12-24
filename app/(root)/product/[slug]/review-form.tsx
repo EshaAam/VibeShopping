@@ -56,7 +56,6 @@ const ReviewForm = ({
   const form = useForm<CustomerReview>({
     resolver: zodResolver(insertReviewSchema),
     defaultValues: {
-      title: '',
       description: '',
       rating: 0,
       productId: '',
@@ -72,7 +71,6 @@ const ReviewForm = ({
     const review = await getReviewByProductId({ productId });
 
     if (review) {
-      form.setValue('title', review.title);
       form.setValue('description', review.description);
       form.setValue('rating', review.rating);
     }
@@ -115,32 +113,6 @@ const ReviewForm = ({
             <div className='grid gap-4 py-4'>
               <FormField
                 control={form.control}
-                name='title'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input placeholder='Enter title' {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name='description'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder='Enter description' {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
                 name='rating'
                 render={({ field }) => (
                   <FormItem>
@@ -162,6 +134,19 @@ const ReviewForm = ({
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name='description'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder='Share your thoughts about this product' {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

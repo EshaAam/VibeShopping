@@ -53,7 +53,9 @@ const CartTable = ({ cart }: { cart?: Cart }) => {
                           alt={item.name}
                           width={50}
                           height={50}
-                        ></Image>
+                          className='object-cover rounded'
+                          style={{ width: '50px', height: '50px' }}
+                        />
                         <span className='px-2'>{item.name}</span>
                       </Link>
                     </TableCell>

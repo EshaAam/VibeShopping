@@ -75,24 +75,18 @@ const ReviewList = ({
         {reviews.map((review) => (
           <Card key={review.id}>
             <CardHeader>
-              <div className='flex-between'>
+              <div className='flex items-center gap-2'>
+                <User className='h-4 w-4' />
                 <CardTitle>{review.title}</CardTitle>
               </div>
-              <CardDescription>{review.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className='flex space-x-4 text-sm text-muted-foreground'>
+              <div className='flex items-center gap-2'>
                 <Rating value={review.rating} />
-                <div className='flex items-center'>
-                  <User className='mr-1 h-3 w-3' />
-                  {review.user ? review.user.name : 'Deleted User'}
-                </div>
-                <div className='flex items-center'>
-                  <Calendar className='mr-1 h-3 w-3' />
+                <span className='text-sm text-muted-foreground'>
                   {formatDateTime(review.createdAt).dateTime}
-                </div>
+                </span>
               </div>
-            </CardContent>
+              <CardDescription className='mt-2'>{review.description}</CardDescription>
+            </CardHeader>
           </Card>
         ))}
       </div>

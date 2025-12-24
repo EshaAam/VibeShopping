@@ -58,7 +58,7 @@ const AdminProductsPage = async (props: {
             <TableRow>
               <TableHead>ID</TableHead>
               <TableHead>NAME</TableHead>
-              <TableHead className='text-right'>PRICE</TableHead>
+              <TableHead className='text-center'>PRICE</TableHead>
               <TableHead>CATEGORY</TableHead>
               <TableHead>STOCK</TableHead>
               <TableHead>RATING</TableHead>
@@ -70,7 +70,7 @@ const AdminProductsPage = async (props: {
               <TableRow key={product.id}>
                 <TableCell>{formatId(product.id)}</TableCell>
                 <TableCell>{product.name}</TableCell>
-                <TableCell className='text-right'>
+                <TableCell className='text-center'>
                   {formatCurrency(product.price)}
                 </TableCell>
                 <TableCell>{product.category}</TableCell>

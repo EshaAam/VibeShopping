@@ -34,6 +34,7 @@ const ProductCard = async ({ product }: { product: Product }) => {
             className="aspect-square object-cover rounded"
             height={300}
             width={300}
+            style={{ width: '300px', height: '300px' }}
           />
         </Link>
       </CardHeader>

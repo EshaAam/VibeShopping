@@ -14,7 +14,8 @@ const ProductImages = ({ images }: { images: string[] }) => {
         alt='hero image'
         width={1000}
         height={1000}
-        className='min-h-[300px] object-cover object-center '
+        className='min-h-[300px] object-cover object-center'
+        style={{ width: '100%', height: 'auto', maxHeight: '600px' }}
       />
       <div className='flex'>
         {images.map((image, index)=>(
@@ -28,6 +29,7 @@ const ProductImages = ({ images }: { images: string[] }) => {
                     'cursor-pointer object-cover object-center rounded-md',
                     current === index ? 'border-2 border-blue-500' : 'border'
                   )}
+                  style={{ width: '100px', height: '100px' }}
                 />
 
             </div>
