@@ -45,3 +45,8 @@ yarn-error.log*
 next-env.d.ts
 
 /lib/generated/prisma
+
+# add project-description file to ignore list
+/project-description.txt
+/best_practices.md
+
