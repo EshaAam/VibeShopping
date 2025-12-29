@@ -12,7 +12,7 @@ const ProductCard = async ({ product }: { product: Product }) => {
   const wishlist = await getMyWishlist();
 
   return (
-    <Card className="w-full max-w-sm relative">
+    <Card className="w-full relative group">
       <div className='absolute top-2 right-2 z-10'>
         <AddToWishlist
           wishlist={wishlist}
@@ -26,32 +26,33 @@ const ProductCard = async ({ product }: { product: Product }) => {
         />
       </div>
       <CardHeader className="p-0 items-center">
-        <Link href={`/product/${product.slug}`}>
-          <Image
-            priority={true}
-            src={product.images![0]}
-            alt={product.name}
-            className="aspect-square object-cover rounded"
-            height={300}
-            width={300}
-            style={{ width: '300px', height: '300px' }}
-          />
+        <Link href={`/product/${product.slug}`} className="w-full">
+          <div className="relative w-full aspect-square overflow-hidden rounded-t">
+            <Image
+              priority={true}
+              src={product.images![0]}
+              alt={product.name}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="object-contain p-2 transition-transform group-hover:scale-105"
+            />
+          </div>
         </Link>
       </CardHeader>
 
-      <CardContent className="p-2 grid gap-4">
-        <div className="text-xs">{product.brand}</div>
+      <CardContent className="p-3 grid gap-2">
+        <div className="text-xs text-muted-foreground">{product.brand}</div>
         <Link href={`/product/${product.slug}`}>
-          <h2 className="text-lg font-semibold hover:underline">
+          <h2 className="text-sm sm:text-base font-semibold hover:underline line-clamp-2 min-h-[2.5rem]">
             {product.name}
           </h2>
         </Link>
         <div className="flex-between gap-2">
-          <Rating value={Number(product.rating)} />
+          <Rating value={Number(product.rating)} size={16} />
           {product.stock > 0 ? (
-            <ProductPrice value={product.price} className="text-2xl" />
+            <ProductPrice value={product.price} className="text-lg sm:text-xl" />
           ) : (
-            <p className="text-destructive">Out of Stock</p>
+            <p className="text-destructive text-sm">Out of Stock</p>
           )}
         </div>
       </CardContent>
