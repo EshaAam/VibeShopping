@@ -7,6 +7,24 @@ import { formatError } from '../utils';
 import { insertReviewSchema } from '../validator';
 import { prisma } from '@/db/prisma';
 
+// Check if user has purchased the product (paid order with this product)
+export async function checkIfUserPurchasedProduct(productId: string) {
+  const session = await auth();
+  if (!session) return false;
+
+  const hasPurchased = await prisma.orderItem.findFirst({
+    where: {
+      productId: productId,
+      order: {
+        userId: session.user.id,
+        isPaid: true,
+      },
+    },
+  });
+
+  return !!hasPurchased;
+}
+
 // Create & Update Review
 export async function createUpdateReview(
   data: z.infer<typeof insertReviewSchema>
@@ -15,12 +33,17 @@ export async function createUpdateReview(
     const session = await auth();
     if (!session) throw new Error('User is not authenticated');
 
-    // Validate and store review data and userId
-    const review = insertReviewSchema.parse({
+    // Validate the input data
+    const validatedData = insertReviewSchema.parse({
       ...data,
       userId: session?.user.id,
-      title: session?.user.name || 'Anonymous User',
     });
+
+    // Prepare review data with required title
+    const review = {
+      ...validatedData,
+      title: session?.user.name || 'Anonymous User',
+    };
 
     // Get the product being reviewed
     const product = await prisma.product.findFirst({
@@ -28,6 +51,12 @@ export async function createUpdateReview(
     });
 
     if (!product) throw new Error('Product not found');
+
+    // Check if user has purchased this product
+    const hasPurchased = await checkIfUserPurchasedProduct(review.productId);
+    if (!hasPurchased) {
+      throw new Error('You can only review products you have purchased');
+    }
 
     // Check if user has already reviewed this product
     const reviewExists = await prisma.review.findFirst({
@@ -45,13 +74,19 @@ export async function createUpdateReview(
           where: { id: reviewExists.id },
           data: {
             description: review.description,
-            title: review.title,
+            title: review.title || 'Anonymous User',
             rating: review.rating,
           },
         });
       } else {
         // Create a new review
-        await tx.review.create({ data: review });
+        await tx.review.create({ 
+          data: {
+            ...review,
+            title: review.title || 'Anonymous User',
+            isVerifiedPurchase: true,
+          } 
+        });
       }
 
       // Get the average rating

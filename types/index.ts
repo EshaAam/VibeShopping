@@ -36,6 +36,7 @@ export type Order = z.infer<typeof insertOrderSchema> & {
 export type Review = z.infer<typeof insertReviewSchema> & {
   id: string;
   createdAt: Date;
+  isVerifiedPurchase: boolean;
   user?: { name: string };
 };
 

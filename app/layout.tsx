@@ -4,6 +4,7 @@ import "@/assets/styles/globals.css";
 import { APP_DESCRIPTION, APP_NAME, SERVER_URL } from "@/lib/constants";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
+import ChatWidget from "@/components/chat/ChatWidget";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -34,6 +35,12 @@ export default function RootLayout({
         >
           {children}
           <Toaster />
+          {/* 
+            ChatWidget: Floating AI assistant available on all pages
+            WHY here: Root layout ensures it's present throughout the app
+            WHY after children: Ensures it renders on top of page content
+          */}
+          <ChatWidget />
         </ThemeProvider>
       </body>
     </html>
