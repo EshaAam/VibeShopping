@@ -1,16 +1,15 @@
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
 import { getMyOrders } from '@/lib/actions/order.actions';
-import { formatCurrency, formatDateTime, formatId } from '@/lib/utils';
 import { Metadata } from 'next';
-import Link from 'next/link';
 import Pagination from '@/components/shared/pagination';
+import OrderTableRow from './order-table-row';
+import { Order, ShippingAddress } from '@/types';
 
 export const metadata: Metadata = {
   title: 'My Orders',
@@ -41,28 +40,13 @@ const OrdersPage = async (props: {
           </TableHeader>
           <TableBody>
             {orders.data.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell>{formatId(order.id)}</TableCell>
-                <TableCell>
-                  {formatDateTime(order.createdAt).dateTime}
-                </TableCell>
-                <TableCell>{formatCurrency(order.totalPrice)}</TableCell>
-                <TableCell>
-                  {order.isPaid && order.paidAt
-                    ? formatDateTime(order.paidAt).dateTime
-                    : 'not paid'}
-                </TableCell>
-                <TableCell>
-                  {order.isDelivered && order.deliveredAt
-                    ? formatDateTime(order.deliveredAt).dateTime
-                    : 'not delivered'}
-                </TableCell>
-                <TableCell>
-                  <Link href={`/order/${order.id}`}>
-                    <span className='px-2'>Details</span>
-                  </Link>
-                </TableCell>
-              </TableRow>
+              <OrderTableRow
+                key={order.id}
+                order={{
+                  ...order,
+                  shippingAddress: order.shippingAddress as ShippingAddress,
+                } as unknown as Order}
+              />
             ))}
           </TableBody>
         </Table>
