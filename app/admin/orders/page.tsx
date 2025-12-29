@@ -1,20 +1,19 @@
 import { auth } from '@/auth';
-import { deleteOrder, getAllOrders } from '@/lib/actions/order.actions';
+import { getAllOrders } from '@/lib/actions/order.actions';
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { formatCurrency, formatDateTime, formatId } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import Pagination from '@/components/shared/pagination';
-import DeleteDialog from '@/components/shared/delete-dialog';
+import AdminOrderTableRow from './admin-order-table-row';
+import { Order, ShippingAddress } from '@/types';
 
 export const metadata: Metadata = {
   title: 'Admin Orders',
@@ -65,31 +64,13 @@ const OrdersPage = async (props: {
           </TableHeader>
           <TableBody>
             {orders.data.map((order) => (
-              <TableRow key={order.id}>
-                <TableCell>{formatId(order.id)}</TableCell>
-                <TableCell>
-                  {formatDateTime(order.createdAt).dateTime}
-                </TableCell>
-                <TableCell>
-                  {formatCurrency(order.totalPrice.toString())}
-                </TableCell>
-                <TableCell>
-                  {order.isPaid && order.paidAt
-                    ? formatDateTime(order.paidAt).dateTime
-                    : 'Not Paid'}
-                </TableCell>
-                <TableCell>
-                  {order.isDelivered && order.deliveredAt
-                    ? formatDateTime(order.deliveredAt).dateTime
-                    : 'Not Delivered'}
-                </TableCell>
-                <TableCell className='flex gap-1'>
-                  <Button asChild variant='outline' size='sm'>
-                    <Link href={`/order/${order.id}`}>Details</Link>
-                  </Button>
-                  <DeleteDialog id={order.id} action={deleteOrder} />
-                </TableCell>
-              </TableRow>
+              <AdminOrderTableRow
+                key={order.id}
+                order={{
+                  ...order,
+                  shippingAddress: order.shippingAddress as ShippingAddress,
+                } as unknown as Order}
+              />
             ))}
           </TableBody>
         </Table>

@@ -174,6 +174,10 @@ export async function getMyOrders({
     orderBy: { createdAt: 'desc' },
     take: limit,
     skip: (page - 1) * limit,
+    include: {
+      orderItems: true,
+      user: { select: { name: true, email: true } },
+    },
   });
 
   const dataCount = await prisma.order.count({
@@ -181,7 +185,7 @@ export async function getMyOrders({
   });
 
   return {
-    data,
+    data: convertToPlainObject(data),
     totalPages: Math.ceil(dataCount / limit),
   };
 }
@@ -216,8 +220,9 @@ export async function getAllOrders({
     take: limit,
     skip: (page - 1) * limit,
     include: {
+      orderItems: true,
       user: {
-        select: { name: true },
+        select: { name: true, email: true },
       },
     },
   });
@@ -229,7 +234,7 @@ export async function getAllOrders({
   });
 
   return {
-    data,
+    data: convertToPlainObject(data),
     totalPages: Math.ceil(dataCount / limit),
   };
 }
