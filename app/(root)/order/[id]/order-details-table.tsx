@@ -24,6 +24,7 @@ import {
 import { useTransition } from 'react';
 import { CreditCard, Loader, Wallet } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { InvoiceDialog } from '@/components/shared/invoice';
 
 const OrderDetailsTable = ({
   order,
@@ -252,6 +253,21 @@ const OrderDetailsTable = ({
                 <MarkAsPaidButton />
               )}
               {isAdmin && isPaid && !isDelivered && <MarkAsDeliveredButton />}
+
+              {/* Download Invoice - Show after payment */}
+              {isPaid && (
+                <div className='mt-4 pt-4 border-t'>
+                  <InvoiceDialog
+                    order={order}
+                    variant='default'
+                    size='lg'
+                    className='w-full'
+                  />
+                  <p className='text-xs text-muted-foreground text-center mt-2'>
+                    📄 Download your invoice as PDF
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
