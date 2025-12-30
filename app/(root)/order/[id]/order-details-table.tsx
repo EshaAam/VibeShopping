@@ -12,19 +12,21 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatDateTime, formatId } from '@/lib/utils';
-import { Order } from '@/types';
+import { Order, OrderStatus } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
   updateOrderToPaid,
   updateOrderToPaidByCOD,
-  deliverOrder,
 } from '@/lib/actions/order.actions';
 import { useTransition } from 'react';
-import { CreditCard, Loader, Wallet } from 'lucide-react';
+import { CreditCard, Loader, Wallet, Package } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { InvoiceDialog } from '@/components/shared/invoice';
+import { OrderStatusTimeline } from '@/components/shared/order/order-status-timeline';
+import { CancelOrderButton } from '@/components/shared/order/cancel-order-button';
+import { UpdateOrderStatusDialog } from '@/components/shared/order/update-order-status-dialog';
 
 const OrderDetailsTable = ({
   order,
@@ -47,7 +49,11 @@ const OrderDetailsTable = ({
     paidAt,
     isDelivered,
     deliveredAt,
+    orderStatus,
+    trackingNumber,
   } = order;
+
+  const currentStatus = (orderStatus || 'Pending') as OrderStatus;
 
   const { toast } = useToast();
   const router = useRouter();
@@ -76,29 +82,6 @@ const OrderDetailsTable = ({
     );
   };
 
-  // Button To mark the order as delivered
-  const MarkAsDeliveredButton = () => {
-    const [isPending, startTransition] = useTransition();
-    const { toast } = useToast();
-    return (
-      <Button
-        type='button'
-        disabled={isPending}
-        onClick={() =>
-          startTransition(async () => {
-            const res = await deliverOrder(order.id);
-            toast({
-              variant: res.success ? 'default' : 'destructive',
-              description: res.message,
-            });
-          })
-        }
-      >
-        {isPending ? 'processing...' : 'Mark As Delivered'}
-      </Button>
-    );
-  };
-
   const handlePayment = async () => {
     startTransition(async () => {
       const res = await updateOrderToPaid(order.id);
@@ -123,6 +106,35 @@ const OrderDetailsTable = ({
   return (
     <>
       <h1 className='py-4 text-2xl'> Order {formatId(order.id)}</h1>
+      
+      {/* Order Tracking Timeline */}
+      <Card className='mb-6'>
+        <CardContent className='p-6'>
+          <div className='flex items-center justify-between mb-4'>
+            <h2 className='text-xl font-semibold flex items-center gap-2'>
+              <Package className='h-5 w-5' />
+              Order Tracking
+            </h2>
+            <div className='flex items-center gap-2'>
+              {/* Cancel Order Button - For users (only before shipment) */}
+              {!isAdmin && <CancelOrderButton orderId={order.id} currentStatus={currentStatus} />}
+              
+              {/* Update Status Button - For admin */}
+              {isAdmin && <UpdateOrderStatusDialog orderId={order.id} currentStatus={currentStatus} />}
+            </div>
+          </div>
+          
+          {trackingNumber && (
+            <div className='mb-4 p-3 bg-muted rounded-lg'>
+              <span className='text-sm text-muted-foreground'>Tracking Number: </span>
+              <span className='font-mono font-medium'>{trackingNumber}</span>
+            </div>
+          )}
+          
+          <OrderStatusTimeline currentStatus={currentStatus} />
+        </CardContent>
+      </Card>
+
       <div className='grid md:grid-cols-3 md:gap-5'>
         <div className='overflow-x-auto md:col-span-2 space-y-4'>
           <Card>
@@ -252,7 +264,6 @@ const OrderDetailsTable = ({
               {isAdmin && !isPaid && paymentMethod === 'CashOnDelivery' && (
                 <MarkAsPaidButton />
               )}
-              {isAdmin && isPaid && !isDelivered && <MarkAsDeliveredButton />}
 
               {/* Download Invoice - Show after payment */}
               {isPaid && (
@@ -263,9 +274,9 @@ const OrderDetailsTable = ({
                     size='lg'
                     className='w-full'
                   />
-                  <p className='text-xs text-muted-foreground text-center mt-2'>
+                  {/* <p className='text-xs text-muted-foreground text-center mt-2'>
                     📄 Download your invoice as PDF
-                  </p>
+                  </p> */}
                 </div>
               )}
             </CardContent>

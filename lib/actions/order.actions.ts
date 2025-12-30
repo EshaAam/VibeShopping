@@ -100,6 +100,7 @@ export async function updateOrderToPaid(orderId: string) {
       data: {
         isPaid: true,
         paidAt: new Date(),
+        orderStatus: 'Processing', // Automatically move to Processing when paid
         paymentResult: {
           id: `MOCK_${Date.now()}`,
           status: 'COMPLETED',
@@ -108,6 +109,8 @@ export async function updateOrderToPaid(orderId: string) {
         },
       },
     });
+
+    revalidatePath(`/order/${orderId}`);
 
     return {
       success: true,
@@ -146,6 +149,7 @@ export async function deliverOrder(orderId: string) {
       data: {
         isDelivered: true,
         deliveredAt: new Date(),
+        orderStatus: 'Delivered', // Also update order status
       },
     });
 
@@ -297,6 +301,120 @@ export async function deleteOrder(id: string) {
     return {
       success: true,
       message: 'Order deleted successfully',
+    };
+  } catch (error) {
+    return { success: false, message: formatError(error) };
+  }
+}
+
+// Update Order Status (Admin)
+export async function updateOrderStatus(
+  orderId: string,
+  newStatus: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled',
+  trackingNumber?: string
+) {
+  try {
+    const session = await auth();
+    if (!session?.user?.role || session.user.role !== 'admin') {
+      throw new Error('Unauthorized: Admin access required');
+    }
+
+    const order = await prisma.order.findFirst({
+      where: { id: orderId },
+    });
+
+    if (!order) throw new Error('Order not found');
+
+    // Validate status transitions
+    const currentStatus = order.orderStatus || 'Pending';
+    const validTransitions: Record<string, string[]> = {
+      Pending: ['Processing', 'Cancelled'],
+      Processing: ['Shipped', 'Cancelled'],
+      Shipped: ['Delivered'],
+      Delivered: [],
+      Cancelled: [],
+    };
+
+    if (!validTransitions[currentStatus]?.includes(newStatus)) {
+      throw new Error(`Cannot change status from ${currentStatus} to ${newStatus}`);
+    }
+
+    // Prepare update data
+    const updateData: {
+      orderStatus: string;
+      trackingNumber?: string;
+      isDelivered?: boolean;
+      deliveredAt?: Date;
+    } = {
+      orderStatus: newStatus,
+    };
+
+    // Add tracking number for shipped orders
+    if (newStatus === 'Shipped' && trackingNumber) {
+      updateData.trackingNumber = trackingNumber;
+    }
+
+    // Update isDelivered if status is Delivered
+    if (newStatus === 'Delivered') {
+      updateData.isDelivered = true;
+      updateData.deliveredAt = new Date();
+    }
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: updateData,
+    });
+
+    revalidatePath(`/order/${orderId}`);
+    revalidatePath('/admin/orders');
+
+    return {
+      success: true,
+      message: `Order status updated to ${newStatus}`,
+    };
+  } catch (error) {
+    return { success: false, message: formatError(error) };
+  }
+}
+
+// Cancel Order (User - only before shipment)
+export async function cancelOrder(orderId: string) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      throw new Error('User is not authenticated');
+    }
+
+    const order = await prisma.order.findFirst({
+      where: { id: orderId },
+    });
+
+    if (!order) throw new Error('Order not found');
+
+    // Check if the user owns this order (unless admin)
+    if (order.userId !== session.user.id && session.user.role !== 'admin') {
+      throw new Error('Unauthorized: You can only cancel your own orders');
+    }
+
+    // Check if order can be cancelled (only Pending or Processing)
+    const currentStatus = order.orderStatus || 'Pending';
+    if (currentStatus !== 'Pending' && currentStatus !== 'Processing') {
+      throw new Error('Cannot cancel order: Order has already been shipped or delivered');
+    }
+
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        orderStatus: 'Cancelled',
+      },
+    });
+
+    revalidatePath(`/order/${orderId}`);
+    revalidatePath('/user/orders');
+
+    return {
+      success: true,
+      message: 'Order has been cancelled successfully',
     };
   } catch (error) {
     return { success: false, message: formatError(error) };

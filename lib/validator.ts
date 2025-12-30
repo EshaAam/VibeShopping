@@ -106,6 +106,9 @@ export const insertOrderItemSchema = z.object({
   qty: z.number(),
 });
 
+// Order Status Schema
+export const orderStatusSchema = z.enum(['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled']);
+
 // Insert Order Schema
 export const insertOrderSchema = z.object({
   userId: z.string().min(1, 'User is required'),
@@ -117,6 +120,8 @@ export const insertOrderSchema = z.object({
     message: 'Invalid payment method',
   }),
   shippingAddress: shippingAddressSchema,
+  orderStatus: orderStatusSchema.optional().default('Pending'),
+  trackingNumber: z.string().optional().nullable(),
 });
 
 // Update Profile Schema

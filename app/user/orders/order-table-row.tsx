@@ -1,16 +1,19 @@
 'use client';
 
-import { Order } from '@/types';
+import { Order, OrderStatus } from '@/types';
 import { TableCell, TableRow } from '@/components/ui/table';
 import { formatCurrency, formatDateTime, formatId } from '@/lib/utils';
 import Link from 'next/link';
 import { InvoiceDialog } from '@/components/shared/invoice';
+import { OrderStatusBadge } from '@/components/shared/order/order-status-badge';
 
 interface OrderTableRowProps {
   order: Order;
 }
 
 const OrderTableRow = ({ order }: OrderTableRowProps) => {
+  const currentStatus = (order.orderStatus || 'Pending') as OrderStatus;
+  
   return (
     <TableRow>
       <TableCell>{formatId(order.id)}</TableCell>
@@ -22,9 +25,7 @@ const OrderTableRow = ({ order }: OrderTableRowProps) => {
           : 'not paid'}
       </TableCell>
       <TableCell>
-        {order.isDelivered && order.deliveredAt
-          ? formatDateTime(order.deliveredAt).dateTime
-          : 'not delivered'}
+        <OrderStatusBadge status={currentStatus} />
       </TableCell>
       <TableCell className="flex items-center gap-2">
         <Link href={`/order/${order.id}`}>
