@@ -36,6 +36,19 @@ export async function getProductById(productId: string) {
   return convertToPlainObject(data);
 }
 
+// Get price range (min and max prices)
+export async function getPriceRange() {
+  const result = await prisma.product.aggregate({
+    _min: { price: true },
+    _max: { price: true },
+  });
+
+  return {
+    minPrice: Number(result._min.price) || 0,
+    maxPrice: Number(result._max.price) || 1000000,
+  };
+}
+
 // Get all products
 export async function getAllProducts({
   query,

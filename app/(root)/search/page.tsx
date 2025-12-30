@@ -4,33 +4,10 @@ import { Button } from '@/components/ui/button';
 import {
   getAllCategories,
   getAllProducts,
+  getPriceRange,
 } from '@/lib/actions/product.actions';
 import Link from 'next/link';
-
-const prices = [
-  {
-    name: '$1 to $50',
-    value: '1-50',
-  },
-  {
-    name: '$51 to $100',
-    value: '51-100',
-  },
-  {
-    name: '$101 to $200',
-    value: '101-200',
-  },
-  {
-    name: '$201 to $500',
-    value: '201-500',
-  },
-  {
-    name: '$501 to $1000',
-    value: '501-1000',
-  },
-];
-
-const ratings = [4, 3, 2, 1];
+import PriceRangeSlider from '@/components/shared/price-range-slider';
 
 const sortOrders = ['newest', 'lowest', 'highest', 'rating'];
 
@@ -39,29 +16,21 @@ export async function generateMetadata(props: {
     q: string;
     category: string;
     price: string;
-    rating: string;
   }>;
 }) {
   const {
     q = 'all',
     category = 'all',
     price = 'all',
-    rating = 'all',
   } = await props.searchParams;
 
   const isQuerySet = q && q !== 'all' && q.trim() !== '';
   const isCategorySet = category && category !== 'all' && category.trim() !== '';
   const isPriceSet = price && price !== 'all' && price.trim() !== '';
-  const isRatingSet = rating && rating !== 'all' && rating.trim() !== '';
 
-  if (isQuerySet || isCategorySet || isPriceSet || isRatingSet) {
+  if (isQuerySet || isCategorySet || isPriceSet) {
     return {
-      title: `Search ${
-        isQuerySet ? q : ''
-      }
-      ${isCategorySet ? `: Category ${category}` : ''}
-      ${isPriceSet ? `: Price ${price}` : ''}
-      ${isRatingSet ? `: Rating ${rating}` : ''}`,
+      title: `Search ${isQuerySet ? q : ''}${isCategorySet ? ` : Category ${category}` : ''}${isPriceSet ? ` : Price $${price}` : ''}`,
     };
   } else {
     return {
@@ -75,7 +44,6 @@ const SearchPage = async (props: {
     q?: string;
     category?: string;
     price?: string;
-    rating?: string;
     sort?: string;
     page?: string;
   }>;
@@ -84,7 +52,6 @@ const SearchPage = async (props: {
     q = 'all',
     category = 'all',
     price = 'all',
-    rating = 'all',
     sort = 'newest',
     page = '1',
   } = await props.searchParams;
@@ -92,12 +59,24 @@ const SearchPage = async (props: {
   // Get categories
   const categories = await getAllCategories();
 
+  // Get price range
+  const priceRange = await getPriceRange();
+
+  // Parse current price filter
+  let currentMinPrice: number | undefined;
+  let currentMaxPrice: number | undefined;
+  if (price !== 'all' && price.includes('-')) {
+    const [minStr, maxStr] = price.split('-');
+    currentMinPrice = Number(minStr);
+    currentMaxPrice = Number(maxStr);
+  }
+
   // Get products
   const products = await getAllProducts({
     category,
     query: q,
     price,
-    rating,
+    rating: 'all',
     page: Number(page),
     sort,
   });
@@ -107,19 +86,16 @@ const SearchPage = async (props: {
     c,
     s,
     p,
-    r,
     pg,
   }: {
     c?: string;
     s?: string;
     p?: string;
-    r?: string;
     pg?: string;
   }) => {
-    const params = { q, category, price, rating, sort, page };
+    const params = { q, category, price, sort, page };
     if (c) params.category = c;
     if (p) params.price = p;
-    if (r) params.rating = r;
     if (pg) params.page = pg;
     if (s) params.sort = s;
     return `/search?${new URLSearchParams(params).toString()}`;
@@ -129,7 +105,7 @@ const SearchPage = async (props: {
     <div className='grid md:grid-cols-5 md:gap-5'>
       <div className='filter-links'>
         {/* Category Links */}
-        <div className='text-xl mt-3 mb-2'>Department</div>
+        <div className='text-xl mt-3 mb-2'>Category</div>
         <div>
           <ul className='space-y-1'>
             <li>
@@ -139,7 +115,7 @@ const SearchPage = async (props: {
                 }`}
                 href={getFilterUrl({ c: 'all' })}
               >
-                Any
+                All
               </Link>
             </li>
             {categories.map((x) => (
@@ -155,80 +131,43 @@ const SearchPage = async (props: {
           </ul>
         </div>
 
-        {/* Price Links */}
-        <div>
-          <div className='text-xl mt-8 mb-2'>Price</div>
-          <ul className='space-y-1'>
-            <li>
-              <Link
-                className={`  ${'all' === price && 'font-bold'}`}
-                href={getFilterUrl({ p: 'all' })}
-              >
-                Any
-              </Link>
-            </li>
-            {prices.map((p) => (
-              <li key={p.value}>
-                <Link
-                  href={getFilterUrl({ p: p.value })}
-                  className={`${p.value === price && 'font-bold'}`}
-                >
-                  {p.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Rating Links */}
-        <div>
-          <div className='text-xl mt-8 mb-2'>Customer Review</div>
-          <ul className='space-y-1'>
-            <li>
-              <Link
-                href={getFilterUrl({ r: 'all' })}
-                className={`  ${'all' === rating && 'font-bold'}`}
-              >
-                Any
-              </Link>
-            </li>
-            {ratings.map((r) => (
-              <li key={r}>
-                <Link
-                  href={getFilterUrl({ r: `${r}` })}
-                  className={`${r.toString() === rating && 'font-bold'}`}
-                >
-                  {`${r} stars & up`}
-                </Link>
-              </li>
-            ))}
-          </ul>
+        {/* Price Range Slider */}
+        <div className='mt-8'>
+          <PriceRangeSlider
+            minPrice={priceRange.minPrice}
+            maxPrice={priceRange.maxPrice}
+            currentMin={currentMinPrice}
+            currentMax={currentMaxPrice}
+          />
         </div>
       </div>
 
       <div className='md:col-span-4 space-y-4'>
         <div className='flex-between flex-col md:flex-row my-4'>
-          <div className='flex items-center'>
-            {q !== 'all' && q !== '' && 'Query : ' + q}
-            {category !== 'all' && category !== '' && '   Category : ' + category}
-            {price !== 'all' && '    Price: ' + price}
-            {rating !== 'all' && '    Rating: ' + rating + ' & up'}
-            &nbsp;
-            {(q !== 'all' && q !== '') ||
-            (category !== 'all' && category !== '') ||
-            rating !== 'all' ||
-            price !== 'all' ? (
-              <Button variant={'link'} asChild>
-                <Link href='/search'>Clear</Link>
+          <div className='flex items-center flex-wrap gap-1'>
+            {q !== 'all' && q !== '' && (
+              <span className='bg-muted px-2 py-1 rounded text-sm'>Query: {q}</span>
+            )}
+            {category !== 'all' && category !== '' && (
+              <span className='bg-muted px-2 py-1 rounded text-sm'>Category: {category}</span>
+            )}
+            {price !== 'all' && (
+              <span className='bg-muted px-2 py-1 rounded text-sm'>Price: ${price.replace('-', ' - $')}</span>
+            )}
+            {((q !== 'all' && q !== '') ||
+              (category !== 'all' && category !== '') ||
+              price !== 'all') && (
+              <Button variant={'link'} asChild size='sm'>
+                <Link href='/search'>Clear All</Link>
               </Button>
-            ) : null}
+            )}
           </div>
-          <div>
-            Sort by{' '}
+          <div className='flex items-center gap-1'>
+            <span className='text-muted-foreground text-sm'>Sort by:</span>
             {sortOrders.map((s) => (
               <Link
                 key={s}
-                className={`mx-2   ${sort == s && 'font-bold'} `}
+                className={`px-2 py-1 text-sm rounded hover:bg-muted ${sort === s ? 'font-bold bg-muted' : ''}`}
                 href={getFilterUrl({ s })}
               >
                 {s}
@@ -237,7 +176,7 @@ const SearchPage = async (props: {
           </div>
         </div>
 
-        <div className='grid grid-cols-1 gap-4 md:grid-cols-3'>
+        <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3'>
           {products!.data.length === 0 && <div>No product found</div>}
           {products!.data.map((product) => (
             <ProductCard key={product.id} product={product} />
