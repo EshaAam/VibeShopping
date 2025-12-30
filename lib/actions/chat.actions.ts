@@ -73,7 +73,7 @@ export async function sendChatMessage(
     // Initialize Gemini directly in the server action
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',  // Free tier model
+      model: 'gemini-2.5-flash',  // Latest model
       generationConfig: {
         temperature: 0.7,
         topP: 0.8,
@@ -84,8 +84,35 @@ export async function sendChatMessage(
 
     const prompt = buildPrompt(trimmedMessage);
 
-    // Generate content using Gemini
-    const result = await model.generateContent(prompt);
+    // Generate content using Gemini with retry logic for rate limiting
+    let result;
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    while (retryCount <= maxRetries) {
+      try {
+        result = await model.generateContent(prompt);
+        break; // Success, exit retry loop
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        
+        // If it's a rate limit error and we haven't exceeded max retries, wait and retry
+        if ((errorMsg.includes('429') || errorMsg.includes('quota')) && retryCount < maxRetries) {
+          retryCount++;
+          const waitTime = Math.pow(2, retryCount) * 1000; // Exponential backoff: 2s, 4s
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+        
+        // If not rate limit or max retries exceeded, throw the error
+        throw err;
+      }
+    }
+    
+    if (!result) {
+      throw new Error('Failed to generate content after retries');
+    }
+    
     const response = result.response;
     const text = response.text();
 

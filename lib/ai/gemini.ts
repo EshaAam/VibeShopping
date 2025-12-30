@@ -22,7 +22,7 @@ const genAI = apiKey ? new GoogleGenerativeAI(apiKey) : null;
 
 /**
  * Get the Gemini model instance
- * WHY gemini-2.0-flash: It's the latest free tier model with good performance for chat
+ * WHY gemini-2.5-flash: Latest model for better performance
  */
 export function getGeminiModel() {
   if (!genAI) {
@@ -30,7 +30,7 @@ export function getGeminiModel() {
   }
 
   return genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',  // Free tier model
+    model: 'gemini-2.5-flash',  // Latest model
     // Safety settings can be adjusted if needed
     generationConfig: {
       temperature: 0.7, // Balanced between creative and focused
