@@ -1,26 +1,33 @@
 import { getOrderById } from '@/lib/actions/order.actions';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { ShippingAddress } from '@/types';
-import OrderDetailsTable from './order-details-table';
+import AdminOrderDetailsTable from './admin-order-details-table';
+import { auth } from '@/auth';
 
 export const metadata = {
-  title: 'Order Details',
+  title: 'Admin - Order Details',
 };
 
-const OrderDetailsPage = async (props: {
+const AdminOrderDetailsPage = async (props: {
   params: Promise<{
     id: string;
   }>;
 }) => {
   const params = await props.params;
-
   const { id } = params;
+
+  const session = await auth();
+  
+  // Only admins can access this page
+  if (!session || session.user.role !== 'admin') {
+    redirect('/');
+  }
 
   const order = await getOrderById(id);
   if (!order) notFound();
 
   return (
-    <OrderDetailsTable
+    <AdminOrderDetailsTable
       order={{
         ...order,
         shippingAddress: order.shippingAddress as ShippingAddress,
@@ -28,4 +35,5 @@ const OrderDetailsPage = async (props: {
     />
   );
 };
-export default OrderDetailsPage;
+
+export default AdminOrderDetailsPage;

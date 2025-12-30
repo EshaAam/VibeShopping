@@ -16,15 +16,14 @@ import { Order, OrderStatus } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { updateOrderToPaid } from '@/lib/actions/order.actions';
+import { updateOrderToPaidByCOD } from '@/lib/actions/order.actions';
 import { useTransition } from 'react';
-import { CreditCard, Loader, Wallet, Package } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Package } from 'lucide-react';
 import { InvoiceDialog } from '@/components/shared/invoice';
 import { OrderStatusTimeline } from '@/components/shared/order/order-status-timeline';
-import { CancelOrderButton } from '@/components/shared/order/cancel-order-button';
+import { UpdateOrderStatusDialog } from '@/components/shared/order/update-order-status-dialog';
 
-const OrderDetailsTable = ({
+const AdminOrderDetailsTable = ({
   order,
 }: {
   order: Order;
@@ -47,36 +46,39 @@ const OrderDetailsTable = ({
 
   const currentStatus = (orderStatus || 'Pending') as OrderStatus;
 
-  const { toast } = useToast();
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  const handlePayment = async () => {
-    startTransition(async () => {
-      const res = await updateOrderToPaid(order.id);
-
-      if (!res.success) {
-        toast({
-          variant: 'destructive',
-          description: res.message,
-        });
-        return;
-      }
-
-      toast({
-        description: `✅ Payment successful via ${paymentMethod}!`,
-      });
-
-      // Refresh the page to show updated payment status
-      router.refresh();
-    });
+  // Button To mark the order as paid (COD)
+  const MarkAsPaidButton = () => {
+    const [isPending, startTransition] = useTransition();
+    const { toast } = useToast();
+    return (
+      <Button
+        type='button'
+        disabled={isPending}
+        onClick={() =>
+          startTransition(async () => {
+            const res = await updateOrderToPaidByCOD(order.id);
+            toast({
+              variant: res.success ? 'default' : 'destructive',
+              description: res.message,
+            });
+          })
+        }
+      >
+        {isPending ? 'processing...' : 'Mark As Paid'}
+      </Button>
+    );
   };
 
   return (
     <>
+      <div className='flex items-center gap-4 py-4'>
+        <Link href='/admin/orders' className='text-muted-foreground hover:text-foreground'>
+          ← Back to Orders
+        </Link>
+      </div>
       <h1 className='py-4 text-2xl'> Order {formatId(order.id)}</h1>
       
-      {/* Order Tracking Timeline - User View (Read Only + Cancel) */}
+      {/* Order Tracking Timeline - Admin View */}
       <Card className='mb-6'>
         <CardContent className='p-6'>
           <div className='flex items-center justify-between mb-4'>
@@ -85,8 +87,8 @@ const OrderDetailsTable = ({
               Order Tracking
             </h2>
             <div className='flex items-center gap-2'>
-              {/* Cancel Order Button - Only before payment */}
-              {!isPaid && <CancelOrderButton orderId={order.id} currentStatus={currentStatus} />}
+              {/* Update Status Button - Admin only */}
+              <UpdateOrderStatusDialog orderId={order.id} currentStatus={currentStatus} />
             </div>
           </div>
           
@@ -195,35 +197,9 @@ const OrderDetailsTable = ({
                 <div>{formatCurrency(totalPrice)}</div>
               </div>
 
-              {!isPaid && (
-                <div className='mt-4'>
-                  <Button
-                    onClick={handlePayment}
-                    disabled={isPending}
-                    className='w-full'
-                    size='lg'
-                  >
-                    {isPending ? (
-                      <>
-                        <Loader className='w-4 h-4 mr-2 animate-spin' />
-                        Processing Payment...
-                      </>
-                    ) : (
-                      <>
-                        {paymentMethod === 'PayPal' && (
-                          <CreditCard className='w-4 h-4 mr-2' />
-                        )}
-                        {paymentMethod === 'Bkash' && (
-                          <Wallet className='w-4 h-4 mr-2' />
-                        )}
-                        Pay with {paymentMethod}
-                      </>
-                    )}
-                  </Button>
-                  <p className='text-xs text-muted-foreground text-center mt-2'>
-                    🔒 Mock payment for demonstration purposes
-                  </p>
-                </div>
+              {/* Cash On Delivery - Mark as Paid */}
+              {!isPaid && paymentMethod === 'CashOnDelivery' && (
+                <MarkAsPaidButton />
               )}
 
               {/* Download Invoice - Show after payment */}
@@ -245,4 +221,4 @@ const OrderDetailsTable = ({
   );
 };
 
-export default OrderDetailsTable;
+export default AdminOrderDetailsTable;

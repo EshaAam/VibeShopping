@@ -32,7 +32,7 @@ const AdminOrderTableRow = ({ order }: AdminOrderTableRowProps) => {
       </TableCell>
       <TableCell className="flex gap-1 items-center">
         <Button asChild variant="outline" size="sm">
-          <Link href={`/order/${order.id}`}>Details</Link>
+          <Link href={`/admin/orders/${order.id}`}>Details</Link>
         </Button>
         {order.isPaid && (
           <InvoiceDialog order={order} variant="outline" size="sm" />
