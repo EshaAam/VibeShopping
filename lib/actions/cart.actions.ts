@@ -194,3 +194,24 @@ export async function removeItemFromCart(productId: string) {
     return { success: false, message: formatError(error) };
   }
 }
+
+// Get shared cart by ID (public access)
+export async function getSharedCart(cartId: string) {
+  try {
+    const cart = await prisma.cart.findFirst({
+      where: { id: cartId },
+      include: {
+        user: { select: { name: true } },
+      },
+    });
+
+    if (!cart) return undefined;
+
+    return {
+      ...convertToPlainObject(cart),
+      userName: cart.user?.name || 'Someone',
+    };
+  } catch {
+    return undefined;
+  }
+}

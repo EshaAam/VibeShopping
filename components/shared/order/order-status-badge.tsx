@@ -20,31 +20,31 @@ const statusConfig: Record<
     label: 'Pending',
     icon: Clock,
     variant: 'secondary',
-    bgColor: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+    bgColor: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-800',
   },
   Processing: {
     label: 'Processing',
     icon: Package,
     variant: 'default',
-    bgColor: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+    bgColor: 'bg-blue-100 text-blue-800 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800',
   },
   Shipped: {
     label: 'Shipped',
     icon: Truck,
     variant: 'default',
-    bgColor: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+    bgColor: 'bg-purple-100 text-purple-800 hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:hover:bg-purple-800',
   },
   Delivered: {
     label: 'Delivered',
     icon: CheckCircle,
     variant: 'default',
-    bgColor: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+    bgColor: 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800',
   },
   Cancelled: {
     label: 'Cancelled',
     icon: XCircle,
     variant: 'destructive',
-    bgColor: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+    bgColor: 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800',
   },
 };
 

@@ -178,3 +178,52 @@ export async function removeItemFromWishlist(productId: string) {
     return { success: false, message: formatError(error) };
   }
 }
+
+// Get shared wishlist by ID (public access)
+export async function getSharedWishlist(wishlistId: string) {
+  try {
+    const wishlist = await prisma.wishlist.findFirst({
+      where: { id: wishlistId },
+      include: {
+        user: { select: { name: true } },
+      },
+    });
+
+    if (!wishlist) return undefined;
+
+    // Safely parse items
+    const items: WishlistItem[] = [];
+
+    if (Array.isArray(wishlist.items)) {
+      for (const item of wishlist.items) {
+        if (!item) continue;
+
+        if (typeof item === 'string') {
+          if (item === '[object Object]' || item.includes('[object Object]')) continue;
+          
+          try {
+            const parsed = JSON.parse(item);
+            if (parsed && typeof parsed === 'object' && 'productId' in parsed) {
+              items.push(parsed as WishlistItem);
+            }
+          } catch {
+            continue;
+          }
+        } else if (typeof item === 'object' && 'productId' in item) {
+          items.push(item as WishlistItem);
+        }
+      }
+    }
+
+    return {
+      id: wishlist.id,
+      userId: wishlist.userId,
+      items,
+      createdAt: wishlist.createdAt,
+      updatedAt: wishlist.updatedAt,
+      userName: wishlist.user?.name || 'Someone',
+    };
+  } catch {
+    return undefined;
+  }
+}

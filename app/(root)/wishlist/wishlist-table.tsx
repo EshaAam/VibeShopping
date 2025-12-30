@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ShareButton } from '@/components/shared/share-button';
 
 const WishlistTable = ({ wishlist }: { wishlist?: Wishlist }) => {
   const { toast } = useToast();
@@ -79,7 +80,16 @@ const WishlistTable = ({ wishlist }: { wishlist?: Wishlist }) => {
 
   return (
     <>
-      <h1 className='py-4 h2-bold'>My Wishlist</h1>
+      <div className="flex items-center justify-between py-4">
+        <h1 className='h2-bold'>My Wishlist</h1>
+        {wishlist && wishlist.items.length > 0 && (
+          <ShareButton 
+            type="wishlist" 
+            shareId={wishlist.id} 
+            itemCount={wishlist.items.length} 
+          />
+        )}
+      </div>
       {!wishlist || wishlist.items.length === 0 ? (
         <div>
           Wishlist is empty.{' '}

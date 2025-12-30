@@ -243,10 +243,59 @@ export async function getAllOrders({
   };
 }
 
-type SalesDataType = {
-  month: string;
-  totalSales: number;
-}[];
+// Get sales chart data based on time range
+export async function getSalesChartData(
+  timeRange: 'daily' | 'monthly' | 'yearly'
+) {
+  let salesDataRaw: Array<{
+    label: string;
+    totalSales: Prisma.Decimal;
+    orderCount: bigint;
+  }>;
+
+  if (timeRange === 'daily') {
+    // Get daily sales for the last 14 days
+    salesDataRaw = await prisma.$queryRaw`
+      SELECT 
+        to_char("createdAt", 'DD Mon') as "label",
+        COALESCE(sum("totalPrice"), 0) as "totalSales",
+        count(*) as "orderCount"
+      FROM "Order" 
+      WHERE "createdAt" >= NOW() - INTERVAL '14 days'
+      GROUP BY to_char("createdAt", 'DD Mon'), DATE("createdAt")
+      ORDER BY DATE("createdAt")
+    `;
+  } else if (timeRange === 'monthly') {
+    // Get monthly sales for the last 12 months
+    salesDataRaw = await prisma.$queryRaw`
+      SELECT 
+        to_char("createdAt", 'Mon YY') as "label",
+        COALESCE(sum("totalPrice"), 0) as "totalSales",
+        count(*) as "orderCount"
+      FROM "Order" 
+      WHERE "createdAt" >= NOW() - INTERVAL '12 months'
+      GROUP BY to_char("createdAt", 'Mon YY'), DATE_TRUNC('month', "createdAt")
+      ORDER BY DATE_TRUNC('month', "createdAt")
+    `;
+  } else {
+    // Get yearly sales
+    salesDataRaw = await prisma.$queryRaw`
+      SELECT 
+        to_char("createdAt", 'YYYY') as "label",
+        COALESCE(sum("totalPrice"), 0) as "totalSales",
+        count(*) as "orderCount"
+      FROM "Order" 
+      GROUP BY to_char("createdAt", 'YYYY')
+      ORDER BY to_char("createdAt", 'YYYY')
+    `;
+  }
+
+  return salesDataRaw.map((entry) => ({
+    label: entry.label,
+    totalSales: Number(entry.totalSales),
+    orderCount: Number(entry.orderCount),
+  }));
+}
 
 // Get sales data and order summary
 export async function getOrderSummary() {
@@ -260,17 +309,8 @@ export async function getOrderSummary() {
     _sum: { totalPrice: true },
   });
 
-  // Get monthly sales
-  const salesDataRaw = await prisma.$queryRaw<
-    Array<{ month: string; totalSales: Prisma.Decimal }>
-  >`SELECT to_char("createdAt", 'MM/YY') as "month", sum("totalPrice") as "totalSales" FROM "Order" GROUP BY to_char("createdAt", 'MM/YY') ORDER BY to_char("createdAt", 'MM/YY')`;
-
-  const salesData: SalesDataType = salesDataRaw.map((entry) => ({
-    month: entry.month,
-    totalSales: Number(entry.totalSales), // Convert Decimal to number
-  }));
-
-  console.log('Sales Data:', salesData); // Debug log
+  // Get daily sales (default view) for the last 14 days
+  const salesData = await getSalesChartData('daily');
 
   // Get latest sales
   const latestOrders = await prisma.order.findMany({
@@ -377,7 +417,7 @@ export async function updateOrderStatus(
   }
 }
 
-// Cancel Order (User - only before shipment)
+// Cancel Order (User - only before payment and shipment)
 export async function cancelOrder(orderId: string) {
   try {
     const session = await auth();
@@ -394,6 +434,11 @@ export async function cancelOrder(orderId: string) {
     // Check if the user owns this order (unless admin)
     if (order.userId !== session.user.id && session.user.role !== 'admin') {
       throw new Error('Unauthorized: You can only cancel your own orders');
+    }
+
+    // Users cannot cancel after payment (only admin can)
+    if (order.isPaid && session.user.role !== 'admin') {
+      throw new Error('Cannot cancel order: Order has already been paid. Please contact support.');
     }
 
     // Check if order can be cancelled (only Pending or Processing)

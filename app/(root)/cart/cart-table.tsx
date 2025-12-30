@@ -19,15 +19,25 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatCurrency } from '@/lib/utils';
+import { ShareButton } from '@/components/shared/share-button';
 
-const CartTable = ({ cart }: { cart?: Cart }) => {
+const CartTable = ({ cart, cartId }: { cart?: Cart; cartId?: string }) => {
   const router = useRouter();
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   return (
     <>
-      <h1 className='py-4 h2-bold'>Shopping Cart</h1>
+      <div className="flex items-center justify-between py-4">
+        <h1 className='h2-bold'>Shopping Cart</h1>
+        {cart && cart.items.length > 0 && cartId && (
+          <ShareButton 
+            type="cart" 
+            shareId={cartId} 
+            itemCount={cart.items.length} 
+          />
+        )}
+      </div>
       {!cart || cart.items.length === 0 ? (
         <div>
           Cart is empty. <Link href='/'>Go shopping</Link>
