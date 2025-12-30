@@ -5,6 +5,8 @@ import { APP_DESCRIPTION, APP_NAME, SERVER_URL } from "@/lib/constants";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import ChatWidget from "@/components/chat/ChatWidget";
+import FloatingCart from "@/components/shared/floating-cart";
+import { getMyCart } from "@/lib/actions/cart.actions";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -19,11 +21,14 @@ export const metadata: Metadata = {
   metadataBase: new URL(SERVER_URL),
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cart = await getMyCart();
+  const cartItemsCount = cart?.items.reduce((acc, item) => acc + item.qty, 0) || 0;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
@@ -35,6 +40,11 @@ export default function RootLayout({
         >
           {children}
           <Toaster />
+          {/* 
+            FloatingCart: Floating cart button above chat widget
+            WHY here: Root layout ensures it's present throughout the app
+          */}
+          <FloatingCart cartItemsCount={cartItemsCount} />
           {/* 
             ChatWidget: Floating AI assistant available on all pages
             WHY here: Root layout ensures it's present throughout the app
