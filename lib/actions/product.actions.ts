@@ -44,8 +44,8 @@ export async function getPriceRange() {
   });
 
   return {
-    minPrice: Number(result._min.price) || 0,
-    maxPrice: Number(result._max.price) || 1000000,
+    minPrice: Math.floor(Number(result._min.price) || 0),
+    maxPrice: Math.ceil(Number(result._max.price) || 1000000),
   };
 }
 
