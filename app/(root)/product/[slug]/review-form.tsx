@@ -98,9 +98,9 @@ const ReviewForm = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button onClick={handleOpenForm} variant='default'>
+      <button onClick={handleOpenForm} className='gradient-btn px-6 py-2.5'>
         Write a review
-      </Button>
+      </button>
       <DialogContent className='sm:max-w-[425px]'>
         <Form {...form}>
           <form method='post' onSubmit={form.handleSubmit(onSubmit)}>

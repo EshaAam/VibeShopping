@@ -7,13 +7,12 @@ import { cn } from '@/lib/utils';
 
 const links = [
   {
-    title: 'Profile',
+    title: 'Dashboard',
     href: '/user/profile',
   },
   {
     title: 'Orders',
     href: '/user/orders',
-
   },
 ];
 
@@ -34,7 +33,9 @@ const MainNav = ({
           href={item.href}
           className={cn(
             'text-sm font-medium transition-colors hover:text-primary',
-            pathname.includes(item.href) ? '' : 'text-muted-foreground'
+            pathname === item.href || (item.href === '/user/profile' && pathname === '/user')
+              ? 'text-primary'
+              : 'text-muted-foreground'
           )}
         >
           {item.title}

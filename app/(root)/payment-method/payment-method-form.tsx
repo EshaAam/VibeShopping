@@ -1,7 +1,6 @@
 'use client';
 
 import CheckoutSteps from '@/components/shared/checkout-steps';
-import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -105,14 +104,14 @@ const PaymentMethodForm = ({
               />
             </div>
             <div className='flex gap-2'>
-              <Button type='submit' disabled={isPending}>
+              <button type='submit' disabled={isPending} className='gradient-btn px-6 py-3 flex items-center gap-2'>
                 {isPending ? (
                   <Loader className='animate-spin w-4 h-4' />
                 ) : (
                   <ArrowRight className='w-4 h-4' />
                 )}
                 Continue
-              </Button>
+              </button>
             </div>
           </form>
         </Form>

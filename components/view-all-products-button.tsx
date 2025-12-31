@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from './ui/button';
 import { useRouter } from 'next/navigation';
 
 const ViewAllProductsButton = () => {
@@ -8,15 +7,13 @@ const ViewAllProductsButton = () => {
 
   return (
     <div className='flex justify-center items-center my-8'>
-      <Button
+      <button
         onClick={() => router.push('/search')}
-        className='px-8 py-4 text-lg font-semibold'
+        className='gradient-btn px-8 py-3 text-base'
       >
         View All Products
-      </Button>
+      </button>
     </div>
-    
-    
   );
 };
 export default ViewAllProductsButton;
