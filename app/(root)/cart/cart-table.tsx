@@ -128,9 +128,9 @@ const CartTable = ({ cart, cartId }: { cart?: Cart; cartId?: string }) => {
                 Subtotal ({cart.items.reduce((a, c) => a + c.qty, 0)}):
                 <span className='font-bold'> {formatCurrency(cart.itemsPrice)}</span>
               </div>
-              <Button
+              <button
                 onClick={() => startTransition(() => router.push('/shipping-address'))}
-                className='w-full'
+                className='gradient-btn w-full py-3 px-4 flex items-center justify-center gap-2'
                 disabled={isPending}
               >
                 {isPending ? (
@@ -139,7 +139,7 @@ const CartTable = ({ cart, cartId }: { cart?: Cart; cartId?: string }) => {
                   <ArrowRight className='w-4 h-4' />
                 )}
                 Proceed to Checkout
-              </Button>
+              </button>
             </CardContent>
           </Card>
         </div>

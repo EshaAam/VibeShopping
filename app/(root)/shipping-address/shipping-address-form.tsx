@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/form';
 
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { ArrowRight, Loader } from 'lucide-react';
 
 const ShippingAddressForm = ({
@@ -179,14 +178,14 @@ const ShippingAddressForm = ({
               />
             </div>
             <div className='flex gap-2'>
-              <Button type='submit' disabled={isPending}>
+              <button type='submit' disabled={isPending} className='gradient-btn px-6 py-3 flex items-center gap-2'>
                 {isPending ? (
                   <Loader className='animate-spin w-4 h-4' />
                 ) : (
                   <ArrowRight className='w-4 h-4' />
                 )}
                 Continue
-              </Button>
+              </button>
             </div>
           </form>
         </Form>

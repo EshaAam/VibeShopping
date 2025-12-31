@@ -97,8 +97,8 @@ const AddToCart = ({
       </Button>
     </div>
   ) : (
-    <Button
-      className="w-full"
+    <button
+      className="gradient-btn w-full py-3 px-4 flex items-center justify-center gap-2"
       type="button"
       disabled={isPending}
       onClick={handleAddToCart}
@@ -109,7 +109,7 @@ const AddToCart = ({
         <Plus className="w-4 h-4" />
       )}
       Add to cart
-    </Button>
+    </button>
   );
 };
 

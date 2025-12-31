@@ -12,8 +12,8 @@ export default function UserLayout({
   return (
     <>
       <div className='flex flex-col'>
-        <div className='border-b container mx-auto'>
-          <div className='flex h-16 items-center px-4'>
+        <div className='border-b'>
+          <div className='flex h-16 items-center wrapper'>
             <Link href='/' className='w-22'>
               <Image
                 src='/images/logo.png'
@@ -28,7 +28,7 @@ export default function UserLayout({
             </div>
           </div>
         </div>
-        <div className='flex-1 space-y-4 p-8 pt-6 container mx-auto'>
+        <div className='flex-1 space-y-4 py-6 wrapper'>
           {children}
         </div>
       </div>
