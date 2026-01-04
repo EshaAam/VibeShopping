@@ -4,8 +4,13 @@ import Link from "next/link";
 import Menu from "./menu";
 import CategoriesDrawer from './categories-drawer';
 import Search from './search';
+import { getAllCategories } from '@/lib/actions/product.actions';
 
-const Header = () => {
+const Header = async () => {
+  const categoriesData = await getAllCategories();
+  // Convert to plain objects for client component
+  const categories = categoriesData.map((c) => ({ category: c.category }));
+
   return (
     <header className="w-full border-b">
       <div className="wrapper flex-between">
@@ -25,7 +30,7 @@ const Header = () => {
           </Link>
         </div>
         <div className='hidden md:block'>
-          <Search />
+          <Search categories={categories} />
         </div>
         {/*menu for small screen   */}
         <Menu />

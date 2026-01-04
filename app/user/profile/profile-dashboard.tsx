@@ -163,7 +163,7 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                 className='rounded-full object-cover'
               />
             ) : (
-              <div className='w-24 h-24 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-gray-900 text-2xl font-bold border-2 border-white/30'>
+              <div className='w-24 h-24 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center text-gray-700 text-2xl font-bold border border-gray-200/50 shadow-sm'>
                 {getInitials(user.name)}
               </div>
             )}
@@ -177,12 +177,12 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
           {/* User Info */}
           <div className='flex-1 space-y-2'>
             <div className='flex items-center gap-3'>
-              <h1 className='text-2xl font-bold text-gray-900'>{user.name}</h1>
-              <Badge variant='secondary' className='capitalize bg-white/30 text-gray-900 border-0'>
+              <h1 className='text-2xl font-bold text-gray-800'>{user.name}</h1>
+              <Badge variant='secondary' className='capitalize bg-gray-800 text-white border-0'>
                 {user.role}
               </Badge>
             </div>
-            <div className='flex flex-wrap items-center gap-4 text-gray-700 text-sm'>
+            <div className='flex flex-wrap items-center gap-4 text-gray-600 text-sm'>
               <span className='flex items-center gap-1'>
                 <Mail className='h-4 w-4' />
                 {user.email}
@@ -194,9 +194,9 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
             </div>
             {user.providers.length > 0 && (
               <div className='flex items-center gap-2'>
-                <span className='text-xs text-gray-700'>Connected via:</span>
+                <span className='text-xs text-gray-500'>Connected via:</span>
                 {user.providers.map((provider) => (
-                  <Badge key={provider} variant='outline' className='text-xs capitalize bg-white/20 text-gray-900 border-white/30'>
+                  <Badge key={provider} variant='outline' className='text-xs capitalize bg-white/60 text-gray-700 border-gray-300/50'>
                     {provider}
                   </Badge>
                 ))}
@@ -209,7 +209,7 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
             variant='outline'
             size='sm'
             onClick={() => setActiveTab('profile')}
-            className='bg-white/30 hover:bg-white/50 text-gray-900 border-white/30'
+            className='bg-white/80 hover:bg-white text-gray-700 border-gray-300/50 shadow-sm'
           >
             <Edit className='h-4 w-4 mr-2' />
             Edit Profile
@@ -221,48 +221,48 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
       <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
         <GradientHoverCard>
           <div className='flex items-center gap-4'>
-            <div className='p-3 rounded-full bg-white/30 backdrop-blur-sm'>
-              <Package className='h-6 w-6 text-gray-800' />
+            <div className='p-3 rounded-full bg-white/60 backdrop-blur-sm shadow-sm'>
+              <Package className='h-6 w-6 text-gray-600' />
             </div>
             <div>
-              <p className='text-2xl font-bold text-gray-900'>{user.totalOrders}</p>
-              <p className='text-sm text-gray-700'>Total Orders</p>
+              <p className='text-2xl font-bold text-gray-800'>{user.totalOrders}</p>
+              <p className='text-sm text-gray-500'>Total Orders</p>
             </div>
           </div>
         </GradientHoverCard>
 
         <GradientHoverCard>
           <div className='flex items-center gap-4'>
-            <div className='p-3 rounded-full bg-white/30 backdrop-blur-sm'>
-              <Clock className='h-6 w-6 text-gray-800' />
+            <div className='p-3 rounded-full bg-white/60 backdrop-blur-sm shadow-sm'>
+              <Clock className='h-6 w-6 text-gray-600' />
             </div>
             <div>
-              <p className='text-2xl font-bold text-gray-900'>{user.activeOrders}</p>
-              <p className='text-sm text-gray-700'>Active Orders</p>
+              <p className='text-2xl font-bold text-gray-800'>{user.activeOrders}</p>
+              <p className='text-sm text-gray-500'>Active Orders</p>
             </div>
           </div>
         </GradientHoverCard>
 
         <GradientHoverCard>
           <div className='flex items-center gap-4'>
-            <div className='p-3 rounded-full bg-white/30 backdrop-blur-sm'>
-              <Heart className='h-6 w-6 text-gray-800' />
+            <div className='p-3 rounded-full bg-white/60 backdrop-blur-sm shadow-sm'>
+              <Heart className='h-6 w-6 text-gray-600' />
             </div>
             <div>
-              <p className='text-2xl font-bold text-gray-900'>{user.wishlistItems}</p>
-              <p className='text-sm text-gray-700'>Wishlist Items</p>
+              <p className='text-2xl font-bold text-gray-800'>{user.wishlistItems}</p>
+              <p className='text-sm text-gray-500'>Wishlist Items</p>
             </div>
           </div>
         </GradientHoverCard>
 
         <GradientHoverCard>
           <div className='flex items-center gap-4'>
-            <div className='p-3 rounded-full bg-white/30 backdrop-blur-sm'>
-              <MapPin className='h-6 w-6 text-gray-800' />
+            <div className='p-3 rounded-full bg-white/60 backdrop-blur-sm shadow-sm'>
+              <MapPin className='h-6 w-6 text-gray-600' />
             </div>
             <div>
-              <p className='text-2xl font-bold text-gray-900'>{user.address ? 1 : 0}</p>
-              <p className='text-sm text-gray-700'>Saved Addresses</p>
+              <p className='text-2xl font-bold text-gray-800'>{user.address ? 1 : 0}</p>
+              <p className='text-sm text-gray-500'>Saved Addresses</p>
             </div>
           </div>
         </GradientHoverCard>
@@ -276,8 +276,8 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
               onClick={() => setActiveTab('profile')}
               className={`flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-all ${
                 activeTab === 'profile'
-                  ? 'bg-white/40 text-gray-900 font-semibold'
-                  : 'text-gray-700 hover:bg-white/20'
+                  ? 'bg-white/80 text-gray-800 font-semibold shadow-sm'
+                  : 'text-gray-600 hover:bg-white/40'
               }`}
             >
               <User className='h-4 w-4' />
@@ -287,8 +287,8 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
               onClick={() => setActiveTab('addresses')}
               className={`flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-all ${
                 activeTab === 'addresses'
-                  ? 'bg-white/40 text-gray-900 font-semibold'
-                  : 'text-gray-700 hover:bg-white/20'
+                  ? 'bg-white/80 text-gray-800 font-semibold shadow-sm'
+                  : 'text-gray-600 hover:bg-white/40'
               }`}
             >
               <MapPin className='h-4 w-4' />
@@ -298,8 +298,8 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
               onClick={() => setActiveTab('payment')}
               className={`flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-all ${
                 activeTab === 'payment'
-                  ? 'bg-white/40 text-gray-900 font-semibold'
-                  : 'text-gray-700 hover:bg-white/20'
+                  ? 'bg-white/80 text-gray-800 font-semibold shadow-sm'
+                  : 'text-gray-600 hover:bg-white/40'
               }`}
             >
               <CreditCard className='h-4 w-4' />
@@ -309,8 +309,8 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
               onClick={() => setActiveTab('security')}
               className={`flex items-center justify-center gap-2 py-2 px-4 rounded-lg transition-all ${
                 activeTab === 'security'
-                  ? 'bg-white/40 text-gray-900 font-semibold'
-                  : 'text-gray-700 hover:bg-white/20'
+                  ? 'bg-white/80 text-gray-800 font-semibold shadow-sm'
+                  : 'text-gray-600 hover:bg-white/40'
               }`}
             >
               <Shield className='h-4 w-4' />
@@ -324,8 +324,8 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
           <GradientHoverCard>
             <div className='space-y-4'>
               <div>
-                <h3 className='text-lg font-bold text-gray-900'>Profile Information</h3>
-                <p className='text-sm text-gray-700'>Update your personal details here.</p>
+                <h3 className='text-lg font-bold text-gray-800'>Profile Information</h3>
+                <p className='text-sm text-gray-500'>Update your personal details here.</p>
               </div>
               <Form {...profileForm}>
                 <form
@@ -337,9 +337,9 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                     name='name'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className='text-gray-900'>Full Name</FormLabel>
+                        <FormLabel className='text-gray-700'>Full Name</FormLabel>
                         <FormControl>
-                          <Input placeholder='John Doe' {...field} className='bg-white/50 border-white/30' />
+                          <Input placeholder='John Doe' {...field} className='bg-white/70 border-gray-200/50' />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -350,17 +350,17 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                     name='email'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className='text-gray-900'>Email</FormLabel>
+                        <FormLabel className='text-gray-700'>Email</FormLabel>
                         <FormControl>
                           <Input
                             placeholder='john@example.com'
                             {...field}
                             disabled={user.providers.length > 0}
-                            className='bg-white/50 border-white/30'
+                            className='bg-white/70 border-gray-200/50'
                           />
                         </FormControl>
                         {user.providers.length > 0 && (
-                          <p className='text-xs text-gray-600'>
+                          <p className='text-xs text-gray-500'>
                             Email cannot be changed for OAuth accounts
                           </p>
                         )}
@@ -372,7 +372,7 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                     <Button
                       type='submit'
                       disabled={profileForm.formState.isSubmitting}
-                      className='bg-gray-900 hover:bg-gray-800 text-white'
+                      className='bg-gray-800 hover:bg-gray-900 text-white'
                     >
                       {profileForm.formState.isSubmitting ? (
                         <Loader className='h-4 w-4 animate-spin mr-2' />
@@ -383,7 +383,7 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                       type='button'
                       variant='outline'
                       onClick={() => profileForm.reset()}
-                      className='bg-white/30 hover:bg-white/50 text-gray-900 border-white/30'
+                      className='bg-white/70 hover:bg-white text-gray-700 border-gray-200/50'
                     >
                       Cancel
                     </Button>
@@ -399,20 +399,20 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
           <GradientHoverCard>
             <div className='space-y-4'>
               <div>
-                <h3 className='text-lg font-bold text-gray-900'>Shipping Address</h3>
-                <p className='text-sm text-gray-700'>Manage your shipping addresses for faster checkout.</p>
+                <h3 className='text-lg font-bold text-gray-800'>Shipping Address</h3>
+                <p className='text-sm text-gray-500'>Manage your shipping addresses for faster checkout.</p>
               </div>
               {user.address && (
-                <div className='mb-4 p-4 border border-white/30 rounded-lg bg-white/20'>
+                <div className='mb-4 p-4 border border-gray-200/50 rounded-lg bg-white/50'>
                   <div className='flex items-start justify-between'>
                     <div>
                       <div className='flex items-center gap-2 mb-2'>
-                        <Badge variant='secondary' className='bg-white/30 text-gray-900'>Default</Badge>
+                        <Badge variant='secondary' className='bg-gray-800 text-white'>Default</Badge>
                       </div>
-                      <p className='font-medium text-gray-900'>{user.address.fullName}</p>
-                      <p className='text-sm text-gray-700'>{user.address.streetAddress}</p>
-                      <p className='text-sm text-gray-700'>{user.address.city}, {user.address.postalCode}</p>
-                      <p className='text-sm text-gray-700'>{user.address.country}</p>
+                      <p className='font-medium text-gray-800'>{user.address.fullName}</p>
+                      <p className='text-sm text-gray-600'>{user.address.streetAddress}</p>
+                      <p className='text-sm text-gray-600'>{user.address.city}, {user.address.postalCode}</p>
+                      <p className='text-sm text-gray-600'>{user.address.country}</p>
                     </div>
                   </div>
                 </div>
@@ -428,9 +428,9 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                     name='fullName'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className='text-gray-900'>Full Name</FormLabel>
+                        <FormLabel className='text-gray-700'>Full Name</FormLabel>
                         <FormControl>
-                          <Input {...field} className='bg-white/50 border-white/30' />
+                          <Input {...field} className='bg-white/70 border-gray-200/50' />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -441,9 +441,9 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                     name='streetAddress'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className='text-gray-900'>Street Address</FormLabel>
+                        <FormLabel className='text-gray-700'>Street Address</FormLabel>
                         <FormControl>
-                          <Input {...field} className='bg-white/50 border-white/30' />
+                          <Input {...field} className='bg-white/70 border-gray-200/50' />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -455,9 +455,9 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                       name='city'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className='text-gray-900'>City</FormLabel>
+                          <FormLabel className='text-gray-700'>City</FormLabel>
                           <FormControl>
-                            <Input {...field} className='bg-white/50 border-white/30' />
+                            <Input {...field} className='bg-white/70 border-gray-200/50' />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -468,9 +468,9 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                       name='postalCode'
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className='text-gray-900'>Postal Code</FormLabel>
+                          <FormLabel className='text-gray-700'>Postal Code</FormLabel>
                           <FormControl>
-                            <Input {...field} className='bg-white/50 border-white/30' />
+                            <Input {...field} className='bg-white/70 border-gray-200/50' />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -482,9 +482,9 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                     name='country'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className='text-gray-900'>Country</FormLabel>
+                        <FormLabel className='text-gray-700'>Country</FormLabel>
                         <FormControl>
-                          <Input {...field} className='bg-white/50 border-white/30' />
+                          <Input {...field} className='bg-white/70 border-gray-200/50' />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -494,7 +494,7 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                     <Button
                       type='submit'
                       disabled={addressForm.formState.isSubmitting}
-                      className='bg-gray-900 hover:bg-gray-800 text-white'
+                      className='bg-gray-800 hover:bg-gray-900 text-white'
                     >
                       {addressForm.formState.isSubmitting ? (
                         <Loader className='h-4 w-4 animate-spin mr-2' />
@@ -505,7 +505,7 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                       type='button'
                       variant='outline'
                       onClick={() => addressForm.reset()}
-                      className='bg-white/30 hover:bg-white/50 text-gray-900 border-white/30'
+                      className='bg-white/70 hover:bg-white text-gray-700 border-gray-200/50'
                     >
                       Cancel
                     </Button>
@@ -521,15 +521,15 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
           <GradientHoverCard>
             <div className='space-y-4'>
               <div>
-                <h3 className='text-lg font-bold text-gray-900'>Payment Preferences</h3>
-                <p className='text-sm text-gray-700'>Set your preferred payment method for faster checkout.</p>
+                <h3 className='text-lg font-bold text-gray-800'>Payment Preferences</h3>
+                <p className='text-sm text-gray-500'>Set your preferred payment method for faster checkout.</p>
               </div>
               {user.paymentMethod && (
-                <div className='mb-4 p-4 border border-white/30 rounded-lg bg-white/20'>
+                <div className='mb-4 p-4 border border-gray-200/50 rounded-lg bg-white/50'>
                   <div className='flex items-center gap-2'>
-                    <CreditCard className='h-5 w-5 text-gray-900' />
-                    <span className='font-medium text-gray-900'>Current Method:</span>
-                    <Badge variant='secondary' className='bg-white/30 text-gray-900'>{user.paymentMethod}</Badge>
+                    <CreditCard className='h-5 w-5 text-gray-600' />
+                    <span className='font-medium text-gray-700'>Current Method:</span>
+                    <Badge variant='secondary' className='bg-gray-800 text-white'>{user.paymentMethod}</Badge>
                   </div>
                 </div>
               )}
@@ -544,7 +544,7 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                     name='type'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className='text-gray-900'>Payment Method</FormLabel>
+                        <FormLabel className='text-gray-700'>Payment Method</FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
@@ -554,12 +554,12 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                             {PAYMENT_METHODS.map((method) => (
                               <div
                                 key={method}
-                                className='flex items-center space-x-3 border border-white/30 rounded-lg p-4 cursor-pointer bg-white/20 hover:bg-white/40'
+                                className='flex items-center space-x-3 border border-gray-200/50 rounded-lg p-4 cursor-pointer bg-white/50 hover:bg-white/80'
                               >
                                 <RadioGroupItem value={method} id={method} />
                                 <label
                                   htmlFor={method}
-                                  className='flex-1 cursor-pointer font-medium text-gray-900'
+                                  className='flex-1 cursor-pointer font-medium text-gray-700'
                                 >
                                   {method}
                                 </label>
@@ -575,7 +575,7 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                     <Button
                       type='submit'
                       disabled={paymentForm.formState.isSubmitting}
-                      className='bg-gray-900 hover:bg-gray-800 text-white'
+                      className='bg-gray-800 hover:bg-gray-900 text-white'
                     >
                       {paymentForm.formState.isSubmitting ? (
                         <Loader className='h-4 w-4 animate-spin mr-2' />
@@ -586,7 +586,7 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                       type='button'
                       variant='outline'
                       onClick={() => paymentForm.reset()}
-                      className='bg-white/30 hover:bg-white/50 text-gray-900 border-white/30'
+                      className='bg-white/70 hover:bg-white text-gray-700 border-gray-200/50'
                     >
                       Cancel
                     </Button>
@@ -602,27 +602,27 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
           <GradientHoverCard>
             <div className='space-y-6'>
               <div>
-                <h3 className='text-lg font-bold text-gray-900'>Security Settings</h3>
-                <p className='text-sm text-gray-700'>Manage your account security and connected providers.</p>
+                <h3 className='text-lg font-bold text-gray-800'>Security Settings</h3>
+                <p className='text-sm text-gray-500'>Manage your account security and connected providers.</p>
               </div>
               
               {/* Connected Accounts */}
               <div>
-                <h4 className='text-md font-semibold text-gray-900 mb-4'>Connected Accounts</h4>
+                <h4 className='text-md font-semibold text-gray-700 mb-4'>Connected Accounts</h4>
                 {user.providers.length > 0 ? (
                   <div className='space-y-3'>
                     {user.providers.map((provider) => (
                       <div
                         key={provider}
-                        className='flex items-center justify-between p-4 border border-white/30 rounded-lg bg-white/20'
+                        className='flex items-center justify-between p-4 border border-gray-200/50 rounded-lg bg-white/50'
                       >
                         <div className='flex items-center gap-3'>
-                          <div className='p-2 rounded-full bg-white/30'>
-                            <Shield className='h-5 w-5 text-gray-900' />
+                          <div className='p-2 rounded-full bg-white/80 shadow-sm'>
+                            <Shield className='h-5 w-5 text-gray-600' />
                           </div>
                           <div>
-                            <p className='font-medium capitalize text-gray-900'>{provider}</p>
-                            <p className='text-sm text-gray-700'>Connected via OAuth</p>
+                            <p className='font-medium capitalize text-gray-800'>{provider}</p>
+                            <p className='text-sm text-gray-500'>Connected via OAuth</p>
                           </div>
                         </div>
                         <Badge variant='outline' className='text-green-700 border-green-500 bg-green-100'>
@@ -632,8 +632,8 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
                     ))}
                   </div>
                 ) : (
-                  <div className='p-4 border border-white/30 rounded-lg bg-white/20'>
-                    <p className='text-sm text-gray-700'>
+                  <div className='p-4 border border-gray-200/50 rounded-lg bg-white/50'>
+                    <p className='text-sm text-gray-600'>
                       You are using email/password authentication.
                     </p>
                   </div>
@@ -643,30 +643,30 @@ const ProfileDashboard = ({ user }: { user: UserData }) => {
               {/* Change Password Section */}
               {user.providers.length === 0 && (
                 <div>
-                  <h4 className='text-md font-semibold text-gray-900 mb-4'>Change Password</h4>
+                  <h4 className='text-md font-semibold text-gray-700 mb-4'>Change Password</h4>
                   <div className='space-y-4 max-w-md'>
                     <div>
-                      <label className='text-sm font-medium text-gray-900'>Current Password</label>
-                      <Input type='password' className='mt-1 bg-white/50 border-white/30' />
+                      <label className='text-sm font-medium text-gray-700'>Current Password</label>
+                      <Input type='password' className='mt-1 bg-white/70 border-gray-200/50' />
                     </div>
                     <div>
-                      <label className='text-sm font-medium text-gray-900'>New Password</label>
-                      <Input type='password' className='mt-1 bg-white/50 border-white/30' />
+                      <label className='text-sm font-medium text-gray-700'>New Password</label>
+                      <Input type='password' className='mt-1 bg-white/70 border-gray-200/50' />
                     </div>
                     <div>
-                      <label className='text-sm font-medium text-gray-900'>Confirm New Password</label>
-                      <Input type='password' className='mt-1 bg-white/50 border-white/30' />
+                      <label className='text-sm font-medium text-gray-700'>Confirm New Password</label>
+                      <Input type='password' className='mt-1 bg-white/70 border-gray-200/50' />
                     </div>
-                    <Button className='bg-gray-900 hover:bg-gray-800 text-white'>Update Password</Button>
+                    <Button className='bg-gray-800 hover:bg-gray-900 text-white'>Update Password</Button>
                   </div>
                 </div>
               )}
 
               {/* Account Actions */}
               <div>
-                <h4 className='text-md font-semibold text-gray-900 mb-4'>Account Actions</h4>
+                <h4 className='text-md font-semibold text-gray-700 mb-4'>Account Actions</h4>
                 <div className='space-y-3'>
-                  <Button variant='outline' className='w-full sm:w-auto bg-white/30 hover:bg-white/50 text-gray-900 border-white/30'>
+                  <Button variant='outline' className='w-full sm:w-auto bg-white/70 hover:bg-white text-gray-700 border-gray-200/50'>
                     Log out from all devices
                   </Button>
                 </div>

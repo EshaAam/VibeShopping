@@ -24,7 +24,7 @@ const Menu = async () => {
               <Heart />
               Wishlist
               {wishlistItemsCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                <Badge className="absolute -top-0 -right-0 h-4 w-4 p-0 flex items-center justify-center text-xs">
                   {wishlistItemsCount}
                 </Badge>
               )}
@@ -35,7 +35,7 @@ const Menu = async () => {
               <ShoppingCart />
               Cart
               {cartItemsCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                <Badge className="absolute -top-0 -right-0 h-4 w-4 p-0 flex items-center justify-center text-xs">
                   {cartItemsCount}
                 </Badge>
               )}
