@@ -35,9 +35,9 @@ const GradientHoverCard = ({ children, className }: GradientHoverCardProps) => {
         ref={cardRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        className='relative overflow-hidden rounded-2xl transition-all duration-300'
+        className='relative overflow-hidden rounded-2xl transition-all duration-300 border border-gray-200/50 dark:border-gray-700/50'
         style={{
-          background: 'linear-gradient(135deg, #FF9ECE 0%, #FFCC99 50%, #C287FA 100%)',
+          background: 'linear-gradient(135deg, #f8f4ff 0%, #fef3f2 35%, #fefce8 65%, #f0fdf4 100%)',
         }}
       >
         {/* Mouse tracking glow */}
@@ -45,9 +45,9 @@ const GradientHoverCard = ({ children, className }: GradientHoverCardProps) => {
           ref={glowRef}
           className='absolute w-64 h-64 pointer-events-none transition-opacity duration-300 z-10'
           style={{
-            background: 'radial-gradient(circle, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 30%, transparent 60%)',
+            background: 'radial-gradient(circle, rgba(168,85,247,0.15) 0%, rgba(251,146,60,0.1) 30%, transparent 60%)',
             transform: 'translate(-50%, -50%)',
-            filter: 'blur(30px)',
+            filter: 'blur(40px)',
             opacity: 0,
           }}
         />

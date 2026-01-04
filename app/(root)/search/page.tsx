@@ -8,8 +8,9 @@ import {
 } from '@/lib/actions/product.actions';
 import Link from 'next/link';
 import PriceRangeSlider from '@/components/shared/price-range-slider';
-
-const sortOrders = ['newest', 'lowest', 'highest', 'rating'];
+import { getMyWishlist } from '@/lib/actions/wishlist.actions';
+import { convertToPlainObject } from '@/lib/utils';
+import SortDropdown from './sort-dropdown';
 
 export async function generateMetadata(props: {
   searchParams: Promise<{
@@ -62,6 +63,9 @@ const SearchPage = async (props: {
   // Get price range
   const priceRange = await getPriceRange();
 
+  // Get wishlist for product cards
+  const wishlist = await getMyWishlist();
+
   // Parse current price filter
   let currentMinPrice: number | undefined;
   let currentMaxPrice: number | undefined;
@@ -72,7 +76,7 @@ const SearchPage = async (props: {
   }
 
   // Get products
-  const products = await getAllProducts({
+  const productsResult = await getAllProducts({
     category,
     query: q,
     price,
@@ -80,6 +84,12 @@ const SearchPage = async (props: {
     page: Number(page),
     sort,
   });
+
+  // Convert products to plain objects for client component
+  const products = {
+    data: convertToPlainObject(productsResult.data),
+    totalPages: productsResult.totalPages,
+  };
 
   // Construct filter url
   const getFilterUrl = ({
@@ -162,24 +172,13 @@ const SearchPage = async (props: {
               </Button>
             )}
           </div>
-          <div className='flex items-center gap-1'>
-            <span className='text-muted-foreground text-sm'>Sort by:</span>
-            {sortOrders.map((s) => (
-              <Link
-                key={s}
-                className={`px-2 py-1 text-sm rounded hover:bg-muted ${sort === s ? 'font-bold bg-muted' : ''}`}
-                href={getFilterUrl({ s })}
-              >
-                {s}
-              </Link>
-            ))}
-          </div>
+          <SortDropdown currentSort={sort} />
         </div>
 
         <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3'>
           {products!.data.length === 0 && <div>No product found</div>}
           {products!.data.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product} wishlist={wishlist} />
           ))}
         </div>
         {products!.totalPages! > 1 && (
