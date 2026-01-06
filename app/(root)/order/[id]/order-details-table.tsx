@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import { InvoiceDialog } from '@/components/shared/invoice';
 import { OrderStatusTimeline } from '@/components/shared/order/order-status-timeline';
 import { CancelOrderButton } from '@/components/shared/order/cancel-order-button';
+import StripePaymentForm from '@/components/shared/payment/stripe-payment-form';
 
 const OrderDetailsTable = ({
   order,
@@ -197,32 +198,44 @@ const OrderDetailsTable = ({
 
               {!isPaid && (
                 <div className='mt-4'>
-                  <Button
-                    onClick={handlePayment}
-                    disabled={isPending}
-                    className='w-full'
-                    size='lg'
-                  >
-                    {isPending ? (
-                      <>
-                        <Loader className='w-4 h-4 mr-2 animate-spin' />
-                        Processing Payment...
-                      </>
-                    ) : (
-                      <>
-                        {paymentMethod === 'PayPal' && (
-                          <CreditCard className='w-4 h-4 mr-2' />
+                  {paymentMethod === 'Stripe' ? (
+                    <StripePaymentForm
+                      orderId={order.id}
+                      totalPrice={Number(totalPrice)}
+                      onPaymentSuccess={() => router.refresh()}
+                    />
+                  ) : (
+                    <>
+                      <Button
+                        onClick={handlePayment}
+                        disabled={isPending}
+                        className='w-full'
+                        size='lg'
+                      >
+                        {isPending ? (
+                          <>
+                            <Loader className='w-4 h-4 mr-2 animate-spin' />
+                            Processing Payment...
+                          </>
+                        ) : (
+                          <>
+                            {paymentMethod === 'CashOnDelivery' && (
+                              <Wallet className='w-4 h-4 mr-2' />
+                            )}
+                            {paymentMethod !== 'CashOnDelivery' && (
+                              <CreditCard className='w-4 h-4 mr-2' />
+                            )}
+                            {paymentMethod === 'CashOnDelivery' ? 'Mark as Paid (COD)' : `Pay with ${paymentMethod}`}
+                          </>
                         )}
-                        {paymentMethod === 'Bkash' && (
-                          <Wallet className='w-4 h-4 mr-2' />
-                        )}
-                        Pay with {paymentMethod}
-                      </>
-                    )}
-                  </Button>
-                  <p className='text-xs text-muted-foreground text-center mt-2'>
-                    🔒 Mock payment for demonstration purposes
-                  </p>
+                      </Button>
+                      {paymentMethod === 'CashOnDelivery' && (
+                        <p className='text-xs text-muted-foreground text-center mt-2'>
+                          💵 Pay when your order arrives
+                        </p>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
 

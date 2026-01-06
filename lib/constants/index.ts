@@ -29,7 +29,7 @@ export const shippingAddressDefaultValues = {
 
 export const PAYMENT_METHODS = process.env.PAYMENT_METHODS
   ? process.env.PAYMENT_METHODS.split(", ")
-  : ["PayPal", "Bkash", "CashOnDelivery"];
+  : ["Stripe", "CashOnDelivery"];
 
 export const productDefaultValues = {
   name: '',
@@ -47,7 +47,7 @@ export const productDefaultValues = {
 };
 
 export const DEFAULT_PAYMENT_METHOD =
-  process.env.DEFAULT_PAYMENT_METHOD || "PayPal";
+  process.env.DEFAULT_PAYMENT_METHOD || "Stripe";
 
 export const PAGE_SIZE = Number(process.env.PAGE_SIZE) || 10;
 
