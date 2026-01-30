@@ -28,7 +28,7 @@ const CartTable = ({ cart, cartId }: { cart?: Cart; cartId?: string }) => {
 
   return (
     <>
-      <div className="flex items-center justify-between py-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 py-4">
         <h1 className='h2-bold'>Shopping Cart</h1>
         {cart && cart.items.length > 0 && cartId && (
           <ShareButton 
@@ -39,13 +39,80 @@ const CartTable = ({ cart, cartId }: { cart?: Cart; cartId?: string }) => {
         )}
       </div>
       {!cart || cart.items.length === 0 ? (
-        <div>
-          Cart is empty. <Link href='/'>Go shopping</Link>
+        <div className='text-center py-10'>
+          <p className='text-muted-foreground mb-4'>Cart is empty.</p>
+          <Link href='/' className='text-primary hover:underline'>Go shopping</Link>
         </div>
       ) : (
-        <div className='grid md:grid-cols-4 md:gap-5'>
-          <div className='overflow-x-auto md:col-span-3'>
-            <Table>
+        <div className='grid lg:grid-cols-4 gap-4 lg:gap-5'>
+          <div className='overflow-x-auto lg:col-span-3'>
+            {/* Mobile Cart View */}
+            <div className='block md:hidden space-y-4'>
+              {cart.items.map((item) => (
+                <Card key={item.slug} className='p-3'>
+                  <div className='flex gap-3'>
+                    <Link href={`/product/${item.slug}`}>
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        width={80}
+                        height={80}
+                        className='object-cover rounded'
+                      />
+                    </Link>
+                    <div className='flex-1 min-w-0'>
+                      <Link href={`/product/${item.slug}`} className='font-medium text-sm line-clamp-2 hover:underline'>
+                        {item.name}
+                      </Link>
+                      <p className='text-lg font-bold mt-1'>${item.price}</p>
+                      <div className='flex items-center gap-2 mt-2'>
+                        <Button
+                          disabled={isPending}
+                          variant='outline'
+                          size='icon'
+                          className='h-8 w-8'
+                          onClick={() =>
+                            startTransition(async () => {
+                              const res = await removeItemFromCart(item.productId);
+                              if (!res.success) {
+                                toast({
+                                  variant: 'destructive',
+                                  description: res.message,
+                                });
+                              }
+                            })
+                          }
+                        >
+                          {isPending ? <Loader className='w-3 h-3 animate-spin' /> : <Minus className='w-3 h-3' />}
+                        </Button>
+                        <span className='w-8 text-center font-medium'>{item.qty}</span>
+                        <Button
+                          disabled={isPending}
+                          variant='outline'
+                          size='icon'
+                          className='h-8 w-8'
+                          onClick={() =>
+                            startTransition(async () => {
+                              const res = await addItemToCart(item);
+                              if (!res.success) {
+                                toast({
+                                  variant: 'destructive',
+                                  description: res.message,
+                                });
+                              }
+                            })
+                          }
+                        >
+                          {isPending ? <Loader className='w-3 h-3 animate-spin' /> : <Plus className='w-3 h-3' />}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            {/* Desktop Cart View */}
+            <Table className='hidden md:table'>
               <TableHeader>
                 <TableRow>
                   <TableHead>Item</TableHead>
@@ -122,15 +189,15 @@ const CartTable = ({ cart, cartId }: { cart?: Cart; cartId?: string }) => {
               </TableBody>
             </Table>
           </div>
-          <Card>
-            <CardContent className='p-4 gap-4'>
-              <div className='pb-3 text-xl'>
+          <Card className='h-fit'>
+            <CardContent className='p-4 space-y-4'>
+              <div className='text-base sm:text-xl'>
                 Subtotal ({cart.items.reduce((a, c) => a + c.qty, 0)}):
                 <span className='font-bold'> {formatCurrency(cart.itemsPrice)}</span>
               </div>
               <button
                 onClick={() => startTransition(() => router.push('/shipping-address'))}
-                className='gradient-btn w-full py-3 px-4 flex items-center justify-center gap-2'
+                className='gradient-btn w-full py-3 px-4 flex items-center justify-center gap-2 text-sm sm:text-base'
                 disabled={isPending}
               >
                 {isPending ? (
