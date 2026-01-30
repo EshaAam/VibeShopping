@@ -1,6 +1,6 @@
 import { getOrderById } from '@/lib/actions/order.actions';
 import { notFound, redirect } from 'next/navigation';
-import { ShippingAddress } from '@/types';
+import { Order, ShippingAddress } from '@/types';
 import AdminOrderDetailsTable from './admin-order-details-table';
 import { auth } from '@/auth';
 
@@ -31,7 +31,7 @@ const AdminOrderDetailsPage = async (props: {
       order={{
         ...order,
         shippingAddress: order.shippingAddress as ShippingAddress,
-      } as any}
+      } as unknown as Order}
     />
   );
 };
