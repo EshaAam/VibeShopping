@@ -1,6 +1,6 @@
 "use server";
 import { signIn, signOut, auth } from "@/auth";
-import { signInFormSchema, signUpFormSchema, shippingAddressSchema, paymentMethodSchema, updateProfileSchema, updateUserSchema } from "../validator";
+import { signInFormSchema, signUpFormSchema, shippingAddressSchema, paymentMethodSchema, updateUserSchema } from "../validator";
 import { z } from 'zod';
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { hashSync } from "bcrypt-ts-edge";

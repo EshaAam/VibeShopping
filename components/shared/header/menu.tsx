@@ -7,11 +7,15 @@ import UserButton from "./user-button";
 import Search from './search';
 import { getMyCart } from "@/lib/actions/cart.actions";
 import { getMyWishlist } from "@/lib/actions/wishlist.actions";
+import { getAllCategories } from "@/lib/actions/product.actions";
 import { Badge } from "@/components/ui/badge";
 
 const Menu = async () => {
     const cart = await getMyCart();
     const wishlist = await getMyWishlist();
+    const categoriesData = await getAllCategories();
+    // Convert to plain objects for client component
+    const categories = categoriesData.map((c) => ({ category: c.category }));
     
     const cartItemsCount = cart?.items.reduce((acc, item) => acc + item.qty, 0) || 0;
     const wishlistItemsCount = wishlist?.items.length || 0;
@@ -59,7 +63,7 @@ const Menu = async () => {
     <SheetContent className='flex flex-col items-start'>
       <SheetTitle>Menu</SheetTitle>
       <div className='mt-10'>
-        <Search />
+        <Search categories={categories} />
       </div>
       <ModeToggle />
       <Button asChild variant='ghost' className="relative">

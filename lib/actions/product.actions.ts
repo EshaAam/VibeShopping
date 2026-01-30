@@ -1,9 +1,9 @@
 'use server';
 
 import { LATEST_PRODUCTS_LIMIT, PAGE_SIZE } from "../constants";
-// import { PrismaClient } from "@prisma/client";
 import { convertToPlainObject, formatError } from "../utils";
 import { prisma } from "@/db/prisma";
+import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { insertProductSchema, updateProductSchema } from '../validator';
 import { z } from 'zod';
@@ -67,7 +67,7 @@ export async function getAllProducts({
   rating?: string;
   sort?: string;
 }) {
-  const queryFilter: any =
+  const queryFilter: Prisma.ProductWhereInput =
     query && query !== 'all'
       ? {
           name: {
@@ -205,7 +205,10 @@ export async function getAllCategories() {
     _count: true,
   });
 
-  return data;
+  return data.map((item) => ({
+    category: item.category,
+    _count: item._count,
+  }));
 }
 
 // Get featured products
