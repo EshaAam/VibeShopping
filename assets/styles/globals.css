@@ -70,7 +70,7 @@
 
 @layer utilities {
   .wrapper {
-    @apply max-w-7xl lg:mx-auto p-5 md:px-10 w-full;
+    @apply max-w-7xl lg:mx-auto px-4 sm:px-6 md:px-10 py-4 w-full;
   }
 
   .flex-start {
@@ -85,15 +85,57 @@
   }
 
   .h1-bold {
-    @apply font-bold text-3xl lg:text-4xl;
+    @apply font-bold text-2xl sm:text-3xl lg:text-4xl;
   }
 
   .h2-bold {
-    @apply font-bold text-2xl lg:text-3xl;
+    @apply font-bold text-xl sm:text-2xl lg:text-3xl;
   }
 
   .h3-bold {
-    @apply font-bold text-xl lg:text-2xl;
+    @apply font-bold text-lg sm:text-xl lg:text-2xl;
+  }
+
+  /* Mobile-first safe area support */
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .safe-area-inset-top {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  /* Touch-friendly tap targets */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Smooth scroll behavior */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Premium card hover effect */
+  .card-hover {
+    @apply transition-all duration-300 ease-out;
+  }
+  .card-hover:hover {
+    @apply shadow-lg -translate-y-1;
+  }
+
+  /* Premium text gradient */
+  .text-gradient {
+    @apply bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 bg-clip-text text-transparent;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }
 

@@ -60,15 +60,15 @@ const AddToWishlist = ({
       size='icon'
       disabled={isPending}
       onClick={existItem ? handleRemoveFromWishlist : handleAddToWishlist}
-      className='relative'
+      className='relative h-8 w-8 sm:h-9 sm:w-9 hover:bg-accent/80 transition-colors'
     >
       {isPending ? (
-        <Loader className='w-5 h-5 animate-spin' />
+        <Loader className='w-4 h-4 sm:w-5 sm:h-5 animate-spin' />
       ) : (
         <Heart
           className={cn(
-            'w-5 h-5',
-            existItem ? 'fill-red-500 text-red-500' : 'text-gray-400'
+            'w-4 h-4 sm:w-5 sm:h-5 transition-colors',
+            existItem ? 'fill-red-500 text-red-500' : 'text-gray-400 hover:text-red-400'
           )}
         />
       )}

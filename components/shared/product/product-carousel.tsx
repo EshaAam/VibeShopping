@@ -22,7 +22,7 @@ export function ProductCarousel({ data }: { data: Product[] }) {
 
   return (
     <Carousel
-      className="w-full mb-12"
+      className="w-full mb-8 sm:mb-12"
       opts={{
         loop: true,
       }}
@@ -38,33 +38,24 @@ export function ProductCarousel({ data }: { data: Product[] }) {
         {productsWithBanners.map((product: Product) => (
           <CarouselItem key={product.id}>
             <Link href={`/product/${product.slug}`}>
-              <div className="relative mx-auto h-60 sm:h-64 md:h-72 lg:h-80">
+              <div className="relative mx-auto h-44 sm:h-56 md:h-64 lg:h-80 rounded-xl overflow-hidden">
                 {product.banner && (
                   <Image
                     alt={product.name}
                     src={product.banner}
-                    // width={1920}
-                    // height={200}
-                    // className='w-full h-auto'
-                    // priority
                     fill
                     sizes="100vw"
                     className="object-cover"
                     priority
                   />
                 )}
-                {/* <div className="absolute inset-0 flex items-end justify-center">
-                  <h2 className="bg-gray-900 bg-opacity-50 text-2xl font-bold px-2 text-white">
-                    {product.name}
-                  </h2>
-                </div> */}
               </div>
             </Link>
           </CarouselItem>
         ))}
       </CarouselContent>
-      <CarouselPrevious />
-      <CarouselNext />
+      <CarouselPrevious className="left-2 sm:left-4 h-8 w-8 sm:h-10 sm:w-10 opacity-70 hover:opacity-100" />
+      <CarouselNext className="right-2 sm:right-4 h-8 w-8 sm:h-10 sm:w-10 opacity-70 hover:opacity-100" />
     </Carousel>
   );
 }

@@ -5,7 +5,6 @@ import {
 } from '@/lib/actions/product.actions';
 import { ProductCarousel } from '@/components/shared/product/product-carousel';
 import ViewAllProductsButton from '@/components/view-all-products-button';
-import IconBoxes from '@/components/icon-boxes';
 import { getMyWishlist } from '@/lib/actions/wishlist.actions';
 import { convertToPlainObject } from '@/lib/utils';
 
@@ -23,7 +22,6 @@ const Homepage = async () => {
 
       <ProductList title='Newest Arrivals' data={latestProducts} wishlist={wishlist} />
       <ViewAllProductsButton />
-      <IconBoxes />
     </div>
   );
 };

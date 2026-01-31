@@ -13,13 +13,13 @@ const FloatingCart = ({ cartItemsCount }: FloatingCartProps) => {
   return (
     <Link href="/cart">
       <Button
-        className="fixed bottom-20 right-4 z-50 h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+        className="fixed bottom-[72px] right-4 z-50 h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
         size="icon"
         aria-label="View cart"
       >
         <ShoppingCart className="h-5 w-5" />
         {cartItemsCount > 0 && (
-          <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs font-bold">
+          <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-[10px] font-bold animate-pulse">
             {cartItemsCount > 99 ? '99+' : cartItemsCount}
           </Badge>
         )}
