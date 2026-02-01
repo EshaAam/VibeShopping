@@ -11,6 +11,7 @@ import PriceRangeSlider from '@/components/shared/price-range-slider';
 import { getMyWishlist } from '@/lib/actions/wishlist.actions';
 import { convertToPlainObject } from '@/lib/utils';
 import SortDropdown from './sort-dropdown';
+import MobileFilters from './mobile-filters';
 
 export async function generateMetadata(props: {
   searchParams: Promise<{
@@ -112,15 +113,28 @@ const SearchPage = async (props: {
   };
 
   return (
-    <div className='grid md:grid-cols-5 md:gap-5'>
-      <div className='filter-links'>
+    <div className='grid lg:grid-cols-5 gap-4 lg:gap-5'>
+      {/* Mobile Filter Button */}
+      <div className='lg:hidden flex items-center justify-between mb-2'>
+        <MobileFilters 
+          categories={categories} 
+          currentCategory={category}
+          priceRange={priceRange}
+          currentMinPrice={currentMinPrice}
+          currentMaxPrice={currentMaxPrice}
+        />
+        <SortDropdown currentSort={sort} />
+      </div>
+      
+      {/* Desktop Filter Sidebar */}
+      <div className='hidden lg:block filter-links'>
         {/* Category Links */}
-        <div className='text-xl mt-3 mb-2'>Category</div>
+        <div className='text-lg lg:text-xl mt-3 mb-2 font-semibold'>Category</div>
         <div>
           <ul className='space-y-1'>
             <li>
               <Link
-                className={`${
+                className={`text-sm hover:underline ${
                   ('all' === category || '' === category) && 'font-bold'
                 }`}
                 href={getFilterUrl({ c: 'all' })}
@@ -131,7 +145,7 @@ const SearchPage = async (props: {
             {categories.map((x) => (
               <li key={x.category}>
                 <Link
-                  className={`${x.category === category && 'font-bold'}`}
+                  className={`text-sm hover:underline ${x.category === category && 'font-bold'}`}
                   href={getFilterUrl({ c: x.category })}
                 >
                   {x.category}
@@ -152,31 +166,51 @@ const SearchPage = async (props: {
         </div>
       </div>
 
-      <div className='md:col-span-4 space-y-4'>
-        <div className='flex-between flex-col md:flex-row my-4'>
-          <div className='flex items-center flex-wrap gap-1'>
+      <div className='lg:col-span-4 space-y-4'>
+        <div className='hidden lg:flex flex-col sm:flex-row gap-3 justify-between my-4'>
+          <div className='flex items-center flex-wrap gap-1.5'>
             {q !== 'all' && q !== '' && (
-              <span className='bg-muted px-2 py-1 rounded text-sm'>Query: {q}</span>
+              <span className='bg-muted px-2 py-1 rounded text-xs sm:text-sm'>Query: {q}</span>
             )}
             {category !== 'all' && category !== '' && (
-              <span className='bg-muted px-2 py-1 rounded text-sm'>Category: {category}</span>
+              <span className='bg-muted px-2 py-1 rounded text-xs sm:text-sm'>Category: {category}</span>
             )}
             {price !== 'all' && (
-              <span className='bg-muted px-2 py-1 rounded text-sm'>Price: ${price.replace('-', ' - $')}</span>
+              <span className='bg-muted px-2 py-1 rounded text-xs sm:text-sm'>Price: ${price.replace('-', ' - $')}</span>
             )}
             {((q !== 'all' && q !== '') ||
               (category !== 'all' && category !== '') ||
               price !== 'all') && (
-              <Button variant={'link'} asChild size='sm'>
+              <Button variant={'link'} asChild size='sm' className='text-xs sm:text-sm'>
                 <Link href='/search'>Clear All</Link>
               </Button>
             )}
           </div>
           <SortDropdown currentSort={sort} />
         </div>
+        
+        {/* Mobile Active Filters */}
+        <div className='lg:hidden flex items-center flex-wrap gap-1.5'>
+          {q !== 'all' && q !== '' && (
+            <span className='bg-muted px-2 py-1 rounded text-xs'>Query: {q}</span>
+          )}
+          {category !== 'all' && category !== '' && (
+            <span className='bg-muted px-2 py-1 rounded text-xs'>Category: {category}</span>
+          )}
+          {price !== 'all' && (
+            <span className='bg-muted px-2 py-1 rounded text-xs'>Price: ${price.replace('-', ' - $')}</span>
+          )}
+          {((q !== 'all' && q !== '') ||
+            (category !== 'all' && category !== '') ||
+            price !== 'all') && (
+            <Button variant={'link'} asChild size='sm' className='text-xs h-6 px-1'>
+              <Link href='/search'>Clear</Link>
+            </Button>
+          )}
+        </div>
 
-        <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3'>
-          {products!.data.length === 0 && <div>No product found</div>}
+        <div className='grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3'>
+          {products!.data.length === 0 && <div className='col-span-full text-center py-10 text-muted-foreground'>No product found</div>}
           {products!.data.map((product) => (
             <ProductCard key={product.id} product={product} wishlist={wishlist} />
           ))}

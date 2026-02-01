@@ -101,11 +101,10 @@ const ChatWidget = () => {
       {/* Chat Window - Opens upward from the button */}
       {isOpen && (
         <div
-          className='fixed bottom-20 right-4 z-50 w-80 sm:w-96 h-[450px] bg-background border border-border rounded-lg shadow-2xl flex flex-col overflow-hidden'
-          style={{ maxHeight: 'calc(100vh - 120px)' }}
+          className='fixed bottom-[68px] right-2 sm:right-4 left-2 sm:left-auto z-50 sm:w-96 h-[60vh] sm:h-[450px] max-h-[500px] bg-background border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden'
         >
           {/* Header */}
-          <div className='flex items-center justify-between p-3 bg-primary text-primary-foreground'>
+          <div className='flex items-center justify-between p-3 bg-primary text-primary-foreground rounded-t-xl'>
             <div className='flex items-center gap-2'>
               <MessageCircle className='h-5 w-5' />
               <span className='font-semibold text-sm'>
@@ -166,7 +165,7 @@ const ChatWidget = () => {
           </div>
 
           {/* Input Area */}
-          <div className='p-3 border-t border-border bg-background'>
+          <div className='p-3 border-t border-border bg-background safe-area-inset-bottom'>
             <div className='flex gap-2'>
               <input
                 ref={inputRef}
@@ -176,14 +175,14 @@ const ChatWidget = () => {
                 onKeyPress={handleKeyPress}
                 placeholder='Ask me anything...'
                 disabled={isPending}
-                className='flex-1 px-3 py-2 text-sm border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:opacity-50'
+                className='flex-1 px-3 py-2.5 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:opacity-50'
                 maxLength={500}
               />
               <Button
                 onClick={handleSend}
                 disabled={!input.trim() || isPending}
                 size='icon'
-                className='shrink-0'
+                className='shrink-0 h-10 w-10'
                 aria-label='Send message'
               >
                 {isPending ? (
@@ -193,17 +192,17 @@ const ChatWidget = () => {
                 )}
               </Button>
             </div>
-            <p className='text-xs text-muted-foreground mt-1.5 text-center'>
+            <p className='text-[10px] sm:text-xs text-muted-foreground mt-1.5 text-center'>
               Powered by AI • {500 - input.length} characters left
             </p>
           </div>
         </div>
       )}
 
-      {/* Floating Chat Button - Fixed at bottom right */}
+      {/* Floating Chat Button - Fixed at bottom right, below cart button */}
       <Button
         onClick={toggleChat}
-        className='fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-shadow'
+        className='fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105'
         size='icon'
         aria-label={isOpen ? 'Close chat' : 'Open chat'}
       >
