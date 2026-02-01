@@ -1,4 +1,4 @@
-const Rating = ({ value, caption, size = 20 }: { value: number; caption?: string; size?: number }) => {
+const Rating = ({ value, caption, size = 20, className }: { value: number; caption?: string; size?: number; className?: string }) => {
   const starStyle = { width: size, height: size };
   
   const Full = () => (
@@ -33,8 +33,8 @@ const Rating = ({ value, caption, size = 20 }: { value: number; caption?: string
   );
 
   return (
-    <div className='flex gap-2'>
-      <div className='flex gap-1'>
+    <div className={`flex gap-1 sm:gap-2 ${className || ''}`}>
+      <div className='flex gap-0.5'>
         {value >= 1 ? <Full /> : value >= 0.5 ? <Half /> : <Empty />}
         {value >= 2 ? <Full /> : value >= 1.5 ? <Half /> : <Empty />}
         {value >= 3 ? <Full /> : value >= 2.5 ? <Half /> : <Empty />}
@@ -42,7 +42,7 @@ const Rating = ({ value, caption, size = 20 }: { value: number; caption?: string
         {value >= 5 ? <Full /> : value >= 4.5 ? <Half /> : <Empty />}
       </div>
 
-      {caption && <span className='text-sm'>{caption}</span>}
+      {caption && <span className='text-xs sm:text-sm'>{caption}</span>}
     </div>
   );
 };

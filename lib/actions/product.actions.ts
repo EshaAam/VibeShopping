@@ -221,3 +221,54 @@ export async function getFeaturedProducts() {
 
   return convertToPlainObject(data);
 }
+
+// Search suggestions - Amazon-style autocomplete
+export async function getSearchSuggestions(query: string, category?: string) {
+  if (!query || query.length < 1) {
+    return [];
+  }
+
+  const categoryFilter = category && category !== 'all' ? { category } : {};
+
+  // Get products matching the query
+  const products = await prisma.product.findMany({
+    where: {
+      ...categoryFilter,
+      OR: [
+        {
+          name: {
+            contains: query,
+            mode: 'insensitive',
+          },
+        },
+        {
+          category: {
+            contains: query,
+            mode: 'insensitive',
+          },
+        },
+        {
+          brand: {
+            contains: query,
+            mode: 'insensitive',
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      category: true,
+      brand: true,
+      price: true,
+      images: true,
+    },
+    orderBy: [
+      { name: 'asc' }, // Lexicographical order
+    ],
+    take: 8, // Limit suggestions
+  });
+
+  return convertToPlainObject(products);
+}
