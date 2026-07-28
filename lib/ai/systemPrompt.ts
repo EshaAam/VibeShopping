@@ -1,63 +1,111 @@
 /**
  * System Prompt for VibeShopping AI Assistant
  *
- * WHY: Inject store-specific context into every AI request.
- * This makes the AI "store-aware" without training/fine-tuning.
- * The prompt defines personality, knowledge, and boundaries.
+ * WHY: Inject store-specific context into every AI request. This makes the AI
+ * store-aware without training or fine-tuning.
+ *
+ * The prompt is now assembled per request rather than being one fixed string:
+ * live product rows, catalog shape, the customer's own cart and orders, and the
+ * recent conversation are all folded in. Everything factual comes from Postgres,
+ * so the model's only job is phrasing - it is explicitly forbidden from
+ * inventing products, prices or stock numbers.
  */
 
-export const SYSTEM_PROMPT = `You are a friendly and helpful shopping assistant for VibeShopping, an online e-commerce store.
+import type { RetrievedProduct } from './retrieval';
+import { formatProducts } from './retrieval';
+
+export interface ChatTurn {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface PromptInput {
+  userMessage: string;
+  history: ChatTurn[];
+  products: RetrievedProduct[];
+  catalog: string | null;
+  userContext: string | null;
+}
+
+/** Store rules that never change. Kept short - it ships on every request. */
+export const SYSTEM_PROMPT = `You are the shopping assistant for VibeShopping, an online store.
 
 ## Your Role
-- Help customers with their shopping experience
-- Answer questions about products, orders, shipping, and payments
-- Be conversational, helpful, and concise
-- Never make up information you don't know
+- Help customers find products, check availability, and understand their orders
+- Be conversational, warm, and brief
+- Never invent information
 
-## Store Information
-- Store Name: VibeShopping
-- Free shipping on orders over $100
-- Tax rate: 15% (automatically calculated at checkout)
-- Payment methods accepted: PayPal, Bkash, Cash on Delivery
+## Store Facts
+- Free shipping on orders over $100, otherwise a flat $10
+- Tax is 15%, calculated automatically at checkout
+- Customers can save items to a Cart or a Wishlist; both merge into their account when they sign in
+- Products can be searched by name, category, or brand, and have ratings and reviews
 
-## Shopping Features
-- Customers can add items to their Cart or Wishlist
-- Wishlist and Cart are saved and will merge when customers log in
-- Customers can search for products by name, category, or brand
-- Products have ratings and reviews from other customers
+## Checkout
+Add to cart, go to checkout, enter shipping address, choose a payment method, review, place the order, then track it from order history.
 
-## Checkout Process
-1. Add items to cart
-2. Proceed to checkout
-3. Enter shipping address
-4. Select payment method (PayPal, Bkash, or Cash on Delivery)
-5. Review and place order
-6. Track order status
+## Using the Live Data Below
+- The LIVE CATALOG DATA section is the single source of truth about products
+- Only ever recommend products that appear there. Never invent a product, price, stock count, or link
+- If a product is OUT OF STOCK, say so plainly and offer an in-stock alternative from the list
+- If stock is low, mention how many are left so the customer can act
+- If the list is empty or nothing fits, say you couldn't find a match and suggest browsing a category - do not guess
+- Always include the product link exactly as given (e.g. /product/some-slug)
+- Prices are already correct; quote them with a $ and two decimals
 
-## What You Cannot Do
-- You cannot access or modify customer accounts
-- You cannot process payments or refunds directly
+## Boundaries
+- You cannot modify accounts, process payments, issue refunds, or cancel orders - direct customers to support or the relevant page
 - You cannot access admin features
-- You cannot see real-time inventory (suggest checking product pages)
-- You cannot access specific order details (direct to order history page)
+- Only ever discuss the orders and cart shown in the CUSTOMER CONTEXT section; if that section is absent, ask the customer to sign in
 
-## Response Guidelines
-- Keep responses concise (2-3 sentences when possible)
-- Use friendly, professional tone
-- If unsure, suggest visiting relevant pages or contacting support
-- Format prices with $ symbol
-- Don't use markdown formatting in responses (no **, ##, etc.)
+## Response Style
+- 2-3 sentences where possible; use short lines when listing products
+- Plain text only, no markdown symbols like ** or ##
+- Stay on topic: shopping at VibeShopping. Politely redirect anything else`;
 
-Remember: You're here to help customers have a great shopping experience at VibeShopping!`;
+/** Cap the history so a long chat can't inflate every prompt. */
+const MAX_HISTORY_TURNS = 6;
+
+function formatHistory(history: ChatTurn[]): string {
+  if (history.length === 0) return '';
+
+  const recent = history.slice(-MAX_HISTORY_TURNS);
+  const lines = recent.map(
+    (turn) => `${turn.role === 'user' ? 'Customer' : 'Assistant'}: ${turn.content}`
+  );
+
+  return `\n\n## CONVERSATION SO FAR\n${lines.join('\n')}`;
+}
 
 /**
- * Build the full prompt with user message
- * WHY: Combines system context with user input for each request
+ * Build the full prompt for one request.
+ * Sections with nothing to say are omitted entirely rather than sent empty -
+ * fewer tokens, and less for the model to get confused by.
  */
-export function buildPrompt(userMessage: string): string {
-  return `${SYSTEM_PROMPT}
+export function buildPrompt({
+  userMessage,
+  history,
+  products,
+  catalog,
+  userContext,
+}: PromptInput): string {
+  const sections: string[] = [SYSTEM_PROMPT];
 
-Customer Question: ${userMessage}
+  const liveData: string[] = [];
+  if (catalog) {
+    liveData.push(`Store overview:\n${catalog}`);
+  }
+  liveData.push(
+    `Products matching this question (stock levels are current):\n${formatProducts(products)}`
+  );
+  sections.push(`\n\n## LIVE CATALOG DATA\n${liveData.join('\n\n')}`);
 
-Please provide a helpful response:`;
+  if (userContext) {
+    sections.push(`\n\n## CUSTOMER CONTEXT\n${userContext}`);
+  }
+
+  sections.push(formatHistory(history));
+  sections.push(`\n\nCustomer: ${userMessage}\n\nAssistant:`);
+
+  return sections.join('');
 }

@@ -24,6 +24,13 @@ interface Message {
   content: string;
 }
 
+/**
+ * How many prior turns travel with each request. Enough for follow-ups like
+ * "is that one in stock?" without inflating every prompt - the server clamps
+ * this again, so it is a bandwidth hint rather than a trust boundary.
+ */
+const HISTORY_LIMIT = 6;
+
 const ChatWidget = () => {
   // State management
   const [isOpen, setIsOpen] = useState(false);
@@ -64,12 +71,22 @@ const ChatWidget = () => {
       role: 'user',
       content: trimmedInput,
     };
+    // Snapshot the prior turns before appending - the server treats the new
+    // message separately, so it must not appear twice in the prompt.
+    const history = messages.slice(-HISTORY_LIMIT).map(({ role, content }) => ({
+      role,
+      content,
+    }));
+
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
 
     // Send to AI using transition for better UX
     startTransition(async () => {
-      const response: ChatResponse = await sendChatMessage(trimmedInput);
+      const response: ChatResponse = await sendChatMessage(
+        trimmedInput,
+        history
+      );
 
       // Add AI response to chat
       const assistantMessage: Message = {
@@ -140,7 +157,9 @@ const ChatWidget = () => {
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+                  // whitespace-pre-wrap: product lists come back as newline
+                  // separated lines and would otherwise collapse into one blob.
+                  className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${
                     message.role === 'user'
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-background border border-border'
