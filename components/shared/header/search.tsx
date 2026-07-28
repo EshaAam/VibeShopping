@@ -22,7 +22,9 @@ interface ProductSuggestion {
   slug: string;
   category: string;
   brand: string;
-  price: number;
+  // string, not number: the Prisma result extension in db/prisma serialises
+  // Decimal prices to strings before they cross the server-action boundary.
+  price: string;
   images: string[];
 }
 
