@@ -179,16 +179,25 @@ export const config = {
           },
         });
 
+        // These ids are the only thing standing between a guest and their
+        // cart, so keep them away from client-side scripts
+        const cookieOptions = {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax" as const,
+          path: "/",
+        };
+
         // Set cart cookie if not present
         if (!hasCartCookie) {
           const sessionCartId = crypto.randomUUID();
-          response.cookies.set("sessionCartId", sessionCartId);
+          response.cookies.set("sessionCartId", sessionCartId, cookieOptions);
         }
 
         // Set wishlist cookie if not present
         if (!hasWishlistCookie) {
           const sessionWishlistId = crypto.randomUUID();
-          response.cookies.set("sessionWishlistId", sessionWishlistId);
+          response.cookies.set("sessionWishlistId", sessionWishlistId, cookieOptions);
         }
 
         return response;
