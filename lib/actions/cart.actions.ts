@@ -4,26 +4,10 @@ import { auth } from "@/auth";
 import { prisma } from "@/db/prisma";
 import { CartItem } from "@/types";
 import { cookies } from "next/headers";
-import { convertToPlainObject, formatError, round2 } from "../utils";
+import { calcPrice, convertToPlainObject, formatError } from "../utils";
 import { cartItemSchema, insertCartSchema } from "../validator";
-import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-
-const calcPrice = (items: z.infer<typeof cartItemSchema>[]) => {
-  const itemsPrice = round2(
-      items.reduce((acc, item) => acc + Number(item.price) * item.qty, 0)
-    ),
-    shippingPrice = round2(itemsPrice > 100 ? 0 : 10),
-    taxPrice = round2(0.15 * itemsPrice),
-    totalPrice = round2(itemsPrice + shippingPrice + taxPrice);
-  return {
-    itemsPrice: itemsPrice.toFixed(2),
-    shippingPrice: shippingPrice.toFixed(2),
-    taxPrice: taxPrice.toFixed(2),
-    totalPrice: totalPrice.toFixed(2),
-  };
-};
 
 export async function addItemToCart(data: CartItem) {
   try {
@@ -36,14 +20,27 @@ export async function addItemToCart(data: CartItem) {
     const userId = session?.user?.id ? (session.user.id as string) : undefined;
     //get cart
     const cart = await getMyCart();
-    const item = cartItemSchema.parse(data);
+    const { productId } = cartItemSchema.parse(data);
     // Find product in database
     const product = await prisma.product.findFirst({
-      where: { id: item.productId },
+      where: { id: productId },
     });
     if (!product) throw new Error("Product not found");
 
+    // Only the product id comes from the client. Price, name and image are
+    // taken from the database so a tampered request can't change what we charge.
+    const item: CartItem = {
+      productId: product.id,
+      name: product.name,
+      slug: product.slug,
+      image: product.images[0],
+      price: product.price,
+      qty: 1,
+    };
+
     if (!cart) {
+      if (product.stock < 1) throw new Error("Not enough stock");
+
       // Create new cart object
       const newCart = insertCartSchema.parse({
         userId: userId,

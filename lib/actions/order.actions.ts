@@ -1,7 +1,7 @@
 'use server';
 
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
-import { formatError, convertToPlainObject } from '../utils';
+import { calcPrice, formatError, convertToPlainObject } from '../utils';
 import { auth } from '@/auth';
 import { getMyCart } from './cart.actions';
 import { getUserById } from './user.actions';
@@ -11,6 +11,29 @@ import { CartItem } from '@/types';
 import { PAGE_SIZE } from '../constants';
 import { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+
+// Move an order to Cancelled and put its items back in stock. The status
+// check in the WHERE clause makes this safe to call twice - only the call
+// that actually flips the status restocks.
+async function cancelAndRestock(orderId: string, fromStatus: string) {
+  await prisma.$transaction(async (tx) => {
+    const cancelled = await tx.order.updateMany({
+      where: { id: orderId, orderStatus: fromStatus },
+      data: { orderStatus: 'Cancelled' },
+    });
+    if (cancelled.count === 0) {
+      throw new Error('Order status changed, please refresh and try again');
+    }
+
+    const items = await tx.orderItem.findMany({ where: { orderId } });
+    for (const item of items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { stock: { increment: item.qty } },
+      });
+    }
+  });
+}
 
 // Create an order
 export async function createOrder() {
@@ -34,27 +57,49 @@ export async function createOrder() {
       return { success: false, message: 'Please select a payment method', redirectTo: '/payment-method' };
     }
 
-    const order = insertOrderSchema.parse({
-      userId: user.id,
-      shippingAddress: user.address,
-      paymentMethod: user.paymentMethod,
-      itemsPrice: cart.itemsPrice,
-      shippingPrice: cart.shippingPrice,
-      taxPrice: cart.taxPrice,
-      totalPrice: cart.totalPrice,
-    });
-
     const insertedOrderId = await prisma.$transaction(async (tx) => {
-      const insertedOrder = await tx.order.create({ data: order });
+      // Re-price every line from the database and reserve its stock. The
+      // conditional decrement is atomic, so two buyers can't both get the last
+      // unit - the second one updates zero rows and the order rolls back.
+      const orderItems = [];
       for (const item of cart.items as CartItem[]) {
-        await tx.orderItem.create({
-          data: {
-            ...item,
-            price: item.price,
-            orderId: insertedOrder.id,
-          },
+        const product = await tx.product.findUnique({
+          where: { id: item.productId },
+        });
+        if (!product) throw new Error(`${item.name} is no longer available`);
+
+        const reserved = await tx.product.updateMany({
+          where: { id: product.id, stock: { gte: item.qty } },
+          data: { stock: { decrement: item.qty } },
+        });
+        if (reserved.count === 0) {
+          throw new Error(`Not enough stock for ${product.name}`);
+        }
+
+        orderItems.push({
+          productId: product.id,
+          name: product.name,
+          slug: product.slug,
+          image: product.images[0],
+          price: product.price,
+          qty: item.qty,
         });
       }
+
+      const order = insertOrderSchema.parse({
+        userId: user.id,
+        shippingAddress: user.address,
+        paymentMethod: user.paymentMethod,
+        ...calcPrice(orderItems),
+      });
+
+      const insertedOrder = await tx.order.create({ data: order });
+      await tx.orderItem.createMany({
+        data: orderItems.map((item) => ({
+          ...item,
+          orderId: insertedOrder.id,
+        })),
+      });
       await tx.cart.update({
         where: { id: cart.id },
         data: {
@@ -400,10 +445,14 @@ export async function updateOrderStatus(
       updateData.deliveredAt = new Date();
     }
 
-    await prisma.order.update({
-      where: { id: orderId },
-      data: updateData,
-    });
+    if (newStatus === 'Cancelled') {
+      await cancelAndRestock(orderId, currentStatus);
+    } else {
+      await prisma.order.update({
+        where: { id: orderId },
+        data: updateData,
+      });
+    }
 
     revalidatePath(`/order/${orderId}`);
     revalidatePath('/admin/orders');
@@ -447,12 +496,7 @@ export async function cancelOrder(orderId: string) {
       throw new Error('Cannot cancel order: Order has already been shipped or delivered');
     }
 
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        orderStatus: 'Cancelled',
-      },
-    });
+    await cancelAndRestock(orderId, currentStatus);
 
     revalidatePath(`/order/${orderId}`);
     revalidatePath('/user/orders');
