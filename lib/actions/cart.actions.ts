@@ -27,6 +27,7 @@ export async function addItemToCart(data: CartItem) {
       where: { id: productId },
     });
     if (!product) throw new Error("Product not found");
+    if (product.archivedAt) throw new Error("This product is no longer available");
 
     // Only the product id comes from the client. Price, name and image are
     // taken from the database so a tampered request can't change what we charge.

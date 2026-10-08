@@ -44,7 +44,9 @@ export async function createOrder() {
         const product = await tx.product.findUnique({
           where: { id: item.productId },
         });
-        if (!product) throw new Error(`${item.name} is no longer available`);
+        if (!product || product.archivedAt) {
+          throw new Error(`${item.name} is no longer available`);
+        }
 
         const reserved = await tx.product.updateMany({
           where: { id: product.id, stock: { gte: item.qty } },

@@ -20,6 +20,9 @@ model Product {
   numReviews  Int         @default(0)
   isFeatured  Boolean     @default(false)
   banner      String?
+  /// Set instead of deleting once a product has been sold, so past orders,
+  /// invoices and reviews keep pointing at a real row. Hidden from the store.
+  archivedAt  DateTime?   @db.Timestamp(6)
   createdAt   DateTime    @default(now()) @db.Timestamp(6)
   OrderItem   OrderItem[]
   Review      Review[]

@@ -17,15 +17,23 @@ export async function deleteProduct(id: string) {
     });
 
     if (!productExists) throw new Error('Product not found');
+    if (productExists.archivedAt) throw new Error('Product is already archived');
 
-    // Order history references products, so a sold product can't be deleted.
+    // Once sold, a product is archived rather than deleted: past orders,
+    // invoices and reviews still point at it, but the store hides it.
     const soldBefore = await prisma.orderItem.findFirst({
       where: { productId: id },
     });
     if (soldBefore) {
-      throw new Error(
-        'This product appears in past orders and cannot be deleted. Set its stock to 0 to stop selling it.'
-      );
+      await prisma.product.update({
+        where: { id },
+        data: { archivedAt: new Date(), isFeatured: false },
+      });
+      revalidatePath('/admin/products');
+      return {
+        success: true,
+        message: 'Product archived. It is hidden from the store but kept for past orders.',
+      };
     }
 
     await prisma.product.delete({ where: { id } });
@@ -100,6 +108,7 @@ export async function getSearchSuggestions(query: string, category?: string) {
   const products = await prisma.product.findMany({
     where: {
       ...categoryFilter,
+      archivedAt: null,
       OR: [
         {
           name: {

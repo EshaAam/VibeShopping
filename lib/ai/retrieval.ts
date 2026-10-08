@@ -159,7 +159,8 @@ export async function retrieveProducts(
 /** Shared query body so the primary search and the price-only retry stay in sync. */
 async function search(where: Record<string, unknown>) {
   return prisma.product.findMany({
-    where,
+    // Archived products are kept for order history but are not for sale
+    where: { ...where, archivedAt: null },
     select: {
       name: true,
       slug: true,
@@ -242,10 +243,10 @@ export async function getCatalogSummary(): Promise<CatalogSummary> {
   }
 
   const [categories, brands, totalProducts, inStockCount] = await Promise.all([
-    prisma.product.findMany({ distinct: ['category'], select: { category: true } }),
-    prisma.product.findMany({ distinct: ['brand'], select: { brand: true } }),
-    prisma.product.count(),
-    prisma.product.count({ where: { stock: { gt: 0 } } }),
+    prisma.product.findMany({ where: { archivedAt: null }, distinct: ['category'], select: { category: true } }),
+    prisma.product.findMany({ where: { archivedAt: null }, distinct: ['brand'], select: { brand: true } }),
+    prisma.product.count({ where: { archivedAt: null } }),
+    prisma.product.count({ where: { archivedAt: null, stock: { gt: 0 } } }),
   ]);
 
   const data: CatalogSummary = {

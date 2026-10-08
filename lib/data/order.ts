@@ -186,7 +186,9 @@ export async function getOrderSummary() {
 
   // Get counts for each resource
   const ordersCount = await prisma.order.count();
-  const productsCount = await prisma.product.count();
+  const productsCount = await prisma.product.count({
+    where: { archivedAt: null },
+  });
   const usersCount = await prisma.user.count();
 
   // Calculate total sales - unpaid and cancelled orders aren't revenue

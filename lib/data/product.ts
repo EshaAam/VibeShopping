@@ -15,6 +15,7 @@ export async function getLatestProducts() {
 //   const prisma = new PrismaClient();
 
   const data = await prisma.product.findMany({
+    where: { archivedAt: null },
     take: LATEST_PRODUCTS_LIMIT,
     orderBy: { createdAt: 'desc' },
   });
@@ -41,6 +42,7 @@ export async function getProductById(productId: string) {
 // Get price range (min and max prices)
 export async function getPriceRange() {
   const result = await prisma.product.aggregate({
+    where: { archivedAt: null },
     _min: { price: true },
     _max: { price: true },
   });
@@ -60,6 +62,7 @@ export async function getAllProducts({
   price,
   rating,
   sort,
+  includeArchived = false,
 }: {
   query: string;
   category: string;
@@ -68,7 +71,13 @@ export async function getAllProducts({
   price?: string;
   rating?: string;
   sort?: string;
+  /** Admin listings show archived products; the storefront never does. */
+  includeArchived?: boolean;
 }) {
+  const archivedFilter: Prisma.ProductWhereInput = includeArchived
+    ? {}
+    : { archivedAt: null };
+
   const queryFilter: Prisma.ProductWhereInput =
     query && query !== 'all'
       ? {
@@ -107,6 +116,7 @@ export async function getAllProducts({
       ...categoryFilter,
       ...ratingFilter,
       ...priceFilter,
+      ...archivedFilter,
     },
     orderBy:
       sort === 'lowest'
@@ -126,6 +136,7 @@ export async function getAllProducts({
       ...categoryFilter,
       ...ratingFilter,
       ...priceFilter,
+      ...archivedFilter,
     },
   });
 
@@ -139,6 +150,7 @@ export async function getAllProducts({
 export async function getAllCategories() {
   const data = await prisma.product.groupBy({
     by: ['category'],
+    where: { archivedAt: null },
     _count: true,
   });
 
@@ -151,7 +163,7 @@ export async function getAllCategories() {
 // Get featured products
 export async function getFeaturedProducts() {
   const data = await prisma.product.findMany({
-    where: { isFeatured: true },
+    where: { isFeatured: true, archivedAt: null },
     orderBy: { createdAt: 'desc' },
     take: 4,
   });

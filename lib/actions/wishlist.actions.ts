@@ -34,6 +34,7 @@ export async function addItemToWishlist(data: WishlistItem) {
       where: { id: item.productId },
     });
     if (!product) throw new Error('Product not found');
+    if (product.archivedAt) throw new Error('This product is no longer available');
 
     if (!wishlist) {
       // Create new wishlist

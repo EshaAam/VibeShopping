@@ -93,13 +93,15 @@ const ProductDetailsPage = async (props: {
                 <span className="text-xs sm:text-sm font-medium text-muted-foreground">
                   Status
                 </span>
-                {product.stock > 0 ? (
+                {product.archivedAt ? (
+                  <Badge variant="secondary" className="text-xs">No longer available</Badge>
+                ) : product.stock > 0 ? (
                   <Badge variant="outline" className="text-xs">In stock</Badge>
                 ) : (
                   <Badge variant="destructive" className="text-xs">Out of stock!</Badge>
                 )}
               </div>
-              {product.stock > 0 && (
+              {product.stock > 0 && !product.archivedAt && (
                 <AddToCart
                   cart={cart}
                   item={{

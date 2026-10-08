@@ -13,6 +13,7 @@ import { deleteProduct } from '@/lib/actions/product.actions';
 import { getAllProducts } from '@/lib/data/product';
 import { formatCurrency, formatId } from '@/lib/utils';
 import DeleteDialog from '@/components/shared/delete-dialog';
+import { Badge } from '@/components/ui/badge';
 
 const AdminProductsPage = async (props: {
   searchParams: Promise<{
@@ -31,6 +32,7 @@ const AdminProductsPage = async (props: {
     query: searchText,
     page,
     category,
+    includeArchived: true,
   });
 
   return (
@@ -70,7 +72,14 @@ const AdminProductsPage = async (props: {
             {products?.data.map((product) => (
               <TableRow key={product.id}>
                 <TableCell>{formatId(product.id)}</TableCell>
-                <TableCell>{product.name}</TableCell>
+                <TableCell>
+                  {product.name}
+                  {product.archivedAt && (
+                    <Badge variant='secondary' className='ml-2'>
+                      Archived
+                    </Badge>
+                  )}
+                </TableCell>
                 <TableCell className='text-center'>
                   {formatCurrency(product.price)}
                 </TableCell>
@@ -81,7 +90,9 @@ const AdminProductsPage = async (props: {
                   <Button asChild variant='outline' size='sm'>
                     <Link href={`/admin/products/${product.id}`}>Edit</Link>
                   </Button>
-                  <DeleteDialog id={product.id} action={deleteProduct} />
+                  {!product.archivedAt && (
+                    <DeleteDialog id={product.id} action={deleteProduct} />
+                  )}
                 </TableCell>
               </TableRow>
             ))}
