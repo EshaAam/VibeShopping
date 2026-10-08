@@ -1,4 +1,5 @@
 import { auth } from '@/auth';
+import { prisma } from '@/db/prisma';
 
 // Server actions are public POST endpoints, so every action that touches
 // someone's data or needs admin rights has to check the caller itself.
@@ -16,4 +17,20 @@ export async function requireAdmin() {
     throw new Error('Unauthorized: Admin access required');
   }
   return session;
+}
+
+// Load an order the caller is allowed to act on. Someone else's order gets
+// the same "not found" as a missing one, so ids can't be probed.
+export async function requireOrderOwner(
+  orderId: string,
+  { allowAdmin = true }: { allowAdmin?: boolean } = {}
+) {
+  const session = await requireUser();
+
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  const isOwner = order?.userId === session.user.id;
+  const isAdmin = allowAdmin && session.user.role === 'admin';
+  if (!order || (!isOwner && !isAdmin)) throw new Error('Order not found');
+
+  return { session, order };
 }

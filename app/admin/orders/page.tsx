@@ -1,5 +1,5 @@
 import { auth } from '@/auth';
-import { getAllOrders } from '@/lib/actions/order.actions';
+import { getAllOrders } from '@/lib/data/order';
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import {

@@ -6,7 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import ChatWidget from "@/components/chat/ChatWidget";
 import FloatingCart from "@/components/shared/floating-cart";
-import { getMyCart } from "@/lib/actions/cart.actions";
+import { getMyCart } from '@/lib/data/cart';
 
 const inter = Inter({
   subsets: ["latin"],

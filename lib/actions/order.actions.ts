@@ -1,16 +1,15 @@
 'use server';
 
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
-import { calcPrice, formatError, convertToPlainObject } from '../utils';
+import { calcPrice, formatError } from '../utils';
 import { auth } from '@/auth';
-import { requireAdmin, requireUser } from '../auth-guard';
-import { getMyCart } from './cart.actions';
-import { getUserById } from './user.actions';
+import { requireAdmin, requireOrderOwner } from '../auth-guard';
+import { getSalesChartData as querySalesChartData } from '@/lib/data/order';
+import { getMyCart } from '@/lib/data/cart';
+import { getUserById } from '@/lib/data/user';
 import { insertOrderSchema } from '../validator';
 import { prisma } from '@/db/prisma';
 import { CartItem } from '@/types';
-import { PAGE_SIZE } from '../constants';
-import { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 
 // Move an order to Cancelled and put its items back in stock. The status
@@ -124,30 +123,6 @@ export async function createOrder() {
   }
 }
 
-// Get order by ID - only the customer who placed it, or an admin, can see it
-export async function getOrderById(orderId: string) {
-  const session = await requireUser();
-
-  const data = await prisma.order.findFirst({
-    where: {
-      id: orderId,
-    },
-    include: {
-      orderItems: true,
-      user: { select: { name: true, email: true } },
-    },
-  });
-
-  if (
-    !data ||
-    (data.userId !== session.user.id && session.user.role !== 'admin')
-  ) {
-    return null;
-  }
-
-  return convertToPlainObject(data);
-}
-
 // Mark an order as paid outside Stripe (cash on delivery). Admin only - the
 // Stripe flow verifies payment itself in payment.actions.
 export async function updateOrderToPaid(orderId: string) {
@@ -228,186 +203,6 @@ export async function deliverOrder(orderId: string) {
   } catch (err) {
     return { success: false, message: formatError(err) };
   }
-}
-
-// Get User Orders 
-// with pagination
-export async function getMyOrders({
-  limit = PAGE_SIZE,
-  page,
-}: {
-  limit?: number;
-  page: number;
-}) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error('User is not authenticated');
-
-  const data = await prisma.order.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-    skip: (page - 1) * limit,
-    include: {
-      orderItems: true,
-      user: { select: { name: true, email: true } },
-    },
-  });
-
-  const dataCount = await prisma.order.count({
-    where: { userId: session.user.id },
-  });
-
-  return {
-    data: convertToPlainObject(data),
-    totalPages: Math.ceil(dataCount / limit),
-  };
-}
-
-// Get All Orders (Admin)
-export async function getAllOrders({
-  limit = PAGE_SIZE,
-  page,
-  query,
-}: {
-  query: string;
-  limit?: number;
-  page: number;
-}) {
-  await requireAdmin();
-
-  const queryFilter: Prisma.OrderWhereInput =
-    query && query !== 'all'
-      ? {
-          user: {
-            name: {
-              contains: query,
-              mode: 'insensitive',
-            } as Prisma.StringFilter,
-          },
-        }
-      : {};
-
-  const data = await prisma.order.findMany({
-    where: {
-      ...queryFilter,
-    },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-    skip: (page - 1) * limit,
-    include: {
-      orderItems: true,
-      user: {
-        select: { name: true, email: true },
-      },
-    },
-  });
-
-  const dataCount = await prisma.order.count({
-    where: {
-      ...queryFilter,
-    },
-  });
-
-  return {
-    data: convertToPlainObject(data),
-    totalPages: Math.ceil(dataCount / limit),
-  };
-}
-
-// Get sales chart data based on time range
-export async function getSalesChartData(
-  timeRange: 'daily' | 'monthly' | 'yearly'
-) {
-  await requireAdmin();
-
-  let salesDataRaw: Array<{
-    label: string;
-    totalSales: Prisma.Decimal;
-    orderCount: bigint;
-  }>;
-
-  if (timeRange === 'daily') {
-    // Get daily sales for the last 14 days
-    salesDataRaw = await prisma.$queryRaw`
-      SELECT 
-        to_char("createdAt", 'DD Mon') as "label",
-        COALESCE(sum("totalPrice"), 0) as "totalSales",
-        count(*) as "orderCount"
-      FROM "Order" 
-      WHERE "createdAt" >= NOW() - INTERVAL '14 days'
-        AND "isPaid" = true AND "orderStatus" <> 'Cancelled'
-      GROUP BY to_char("createdAt", 'DD Mon'), DATE("createdAt")
-      ORDER BY DATE("createdAt")
-    `;
-  } else if (timeRange === 'monthly') {
-    // Get monthly sales for the last 12 months
-    salesDataRaw = await prisma.$queryRaw`
-      SELECT 
-        to_char("createdAt", 'Mon YY') as "label",
-        COALESCE(sum("totalPrice"), 0) as "totalSales",
-        count(*) as "orderCount"
-      FROM "Order" 
-      WHERE "createdAt" >= NOW() - INTERVAL '12 months'
-        AND "isPaid" = true AND "orderStatus" <> 'Cancelled'
-      GROUP BY to_char("createdAt", 'Mon YY'), DATE_TRUNC('month', "createdAt")
-      ORDER BY DATE_TRUNC('month', "createdAt")
-    `;
-  } else {
-    // Get yearly sales
-    salesDataRaw = await prisma.$queryRaw`
-      SELECT 
-        to_char("createdAt", 'YYYY') as "label",
-        COALESCE(sum("totalPrice"), 0) as "totalSales",
-        count(*) as "orderCount"
-      FROM "Order" 
-      WHERE "isPaid" = true AND "orderStatus" <> 'Cancelled'
-      GROUP BY to_char("createdAt", 'YYYY')
-      ORDER BY to_char("createdAt", 'YYYY')
-    `;
-  }
-
-  return salesDataRaw.map((entry) => ({
-    label: entry.label,
-    totalSales: Number(entry.totalSales),
-    orderCount: Number(entry.orderCount),
-  }));
-}
-
-// Get sales data and order summary
-export async function getOrderSummary() {
-  await requireAdmin();
-
-  // Get counts for each resource
-  const ordersCount = await prisma.order.count();
-  const productsCount = await prisma.product.count();
-  const usersCount = await prisma.user.count();
-
-  // Calculate total sales - unpaid and cancelled orders aren't revenue
-  const totalSales = await prisma.order.aggregate({
-    _sum: { totalPrice: true },
-    where: { isPaid: true, orderStatus: { not: 'Cancelled' } },
-  });
-
-  // Get daily sales (default view) for the last 14 days
-  const salesData = await getSalesChartData('daily');
-
-  // Get latest sales
-  const latestOrders = await prisma.order.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: {
-      user: { select: { name: true } },
-    },
-    take: 6,
-  });
-
-  return {
-    ordersCount,
-    productsCount,
-    usersCount,
-    totalSales,
-    latestOrders,
-    salesData,
-  };
 }
 
 // Delete Order
@@ -502,21 +297,8 @@ export async function updateOrderStatus(
 // Cancel Order (User - only before payment and shipment)
 export async function cancelOrder(orderId: string) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      throw new Error('User is not authenticated');
-    }
-
-    const order = await prisma.order.findFirst({
-      where: { id: orderId },
-    });
-
-    if (!order) throw new Error('Order not found');
-
-    // Check if the user owns this order (unless admin)
-    if (order.userId !== session.user.id && session.user.role !== 'admin') {
-      throw new Error('Unauthorized: You can only cancel your own orders');
-    }
+    // Only the customer who placed it, or an admin
+    const { session, order } = await requireOrderOwner(orderId);
 
     // Users cannot cancel after payment (only admin can)
     if (order.isPaid && session.user.role !== 'admin') {
@@ -541,4 +323,12 @@ export async function cancelOrder(orderId: string) {
   } catch (error) {
     return { success: false, message: formatError(error) };
   }
+}
+
+// Sales chart data for the admin overview - kept as an action because the
+// chart's range picker refetches it from the client.
+export async function getSalesChartData(
+  timeRange: 'daily' | 'monthly' | 'yearly'
+) {
+  return querySalesChartData(timeRange);
 }

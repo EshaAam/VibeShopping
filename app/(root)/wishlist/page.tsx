@@ -1,4 +1,4 @@
-import { getMyWishlist } from '@/lib/actions/wishlist.actions';
+import { getMyWishlist } from '@/lib/data/wishlist';
 import WishlistTable from './wishlist-table';
 import { Metadata } from 'next';
 

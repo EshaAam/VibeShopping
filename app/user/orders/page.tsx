@@ -5,7 +5,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getMyOrders } from '@/lib/actions/order.actions';
+import { getMyOrders } from '@/lib/data/order';
 import { Metadata } from 'next';
 import Pagination from '@/components/shared/pagination';
 import OrderTableRow from './order-table-row';

@@ -5,9 +5,9 @@ import Link from "next/link";
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import UserButton from "./user-button";
 import Search from './search';
-import { getMyCart } from "@/lib/actions/cart.actions";
-import { getMyWishlist } from "@/lib/actions/wishlist.actions";
-import { getAllCategories } from "@/lib/actions/product.actions";
+import { getMyCart } from '@/lib/data/cart';
+import { getMyWishlist } from '@/lib/data/wishlist';
+import { getAllCategories } from '@/lib/data/product';
 import { Badge } from "@/components/ui/badge";
 
 const Menu = async () => {

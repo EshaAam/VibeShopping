@@ -1,14 +1,10 @@
 import Pagination from '@/components/shared/pagination';
 import ProductCard from '@/components/shared/product/product-card';
 import { Button } from '@/components/ui/button';
-import {
-  getAllCategories,
-  getAllProducts,
-  getPriceRange,
-} from '@/lib/actions/product.actions';
+import { getAllCategories, getAllProducts, getPriceRange } from '@/lib/data/product';
 import Link from 'next/link';
 import PriceRangeSlider from '@/components/shared/price-range-slider';
-import { getMyWishlist } from '@/lib/actions/wishlist.actions';
+import { getMyWishlist } from '@/lib/data/wishlist';
 import { convertToPlainObject } from '@/lib/utils';
 import SortDropdown from './sort-dropdown';
 import MobileFilters from './mobile-filters';

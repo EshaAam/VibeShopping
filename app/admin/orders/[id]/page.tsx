@@ -1,4 +1,4 @@
-import { getOrderById } from '@/lib/actions/order.actions';
+import { getOrderById } from '@/lib/data/order';
 import { notFound, redirect } from 'next/navigation';
 import { Order, ShippingAddress } from '@/types';
 import AdminOrderDetailsTable from './admin-order-details-table';

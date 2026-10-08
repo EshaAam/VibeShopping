@@ -9,7 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getAllProducts, deleteProduct } from '@/lib/actions/product.actions';
+import { deleteProduct } from '@/lib/actions/product.actions';
+import { getAllProducts } from '@/lib/data/product';
 import { formatCurrency, formatId } from '@/lib/utils';
 import DeleteDialog from '@/components/shared/delete-dialog';
 

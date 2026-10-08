@@ -1,4 +1,4 @@
-import { getSharedWishlist } from '@/lib/actions/wishlist.actions';
+import { getSharedWishlist } from '@/lib/data/wishlist';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Image from 'next/image';

@@ -1,11 +1,8 @@
 import ProductList from '@/components/shared/product/product-list';
-import {
-  getFeaturedProducts,
-  getLatestProducts,
-} from '@/lib/actions/product.actions';
+import { getFeaturedProducts, getLatestProducts } from '@/lib/data/product';
 import { ProductCarousel } from '@/components/shared/product/product-carousel';
 import ViewAllProductsButton from '@/components/view-all-products-button';
-import { getMyWishlist } from '@/lib/actions/wishlist.actions';
+import { getMyWishlist } from '@/lib/data/wishlist';
 import { convertToPlainObject } from '@/lib/utils';
 
 const Homepage = async () => {

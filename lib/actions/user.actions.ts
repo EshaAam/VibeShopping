@@ -7,10 +7,9 @@ import { hashSync } from "bcrypt-ts-edge";
 import { prisma } from "@/db/prisma";
 import { formatError } from "../utils";
 import { ShippingAddress } from "@/types";
-import { PAGE_SIZE, USER_ROLES } from '@/lib/constants';
-import { requireAdmin, requireUser } from '../auth-guard';
+import { USER_ROLES } from '@/lib/constants';
+import { requireAdmin } from '../auth-guard';
 import { revalidatePath } from 'next/cache';
-import { Prisma } from '@prisma/client';
 
 export async function signInWithCredentials(
   prevState: unknown,
@@ -75,23 +74,6 @@ export async function signUpUser(prevState: unknown, formData: FormData) {
 // Sign the user out
 export async function signOutUser() {
   await signOut();
-}
-
-// Get user by ID - your own record, or anyone's if you're an admin.
-// The password hash is never selected, so it can't leak into a client payload.
-export async function getUserById(userId: string) {
-  const session = await requireUser();
-  if (session.user.id !== userId && session.user.role !== 'admin') {
-    throw new Error('Unauthorized');
-  }
-
-  const user = await prisma.user.findFirst({
-    where: { id: userId },
-    omit: { password: true },
-  });
-
-  if (!user) throw new Error('User not found');
-  return user;
 }
 
 // Update user's address
@@ -185,49 +167,6 @@ export async function updateProfile(user: { name: string; email: string }) {
   } catch (error) {
     return { success: false, message: formatError(error) };
   }
-}
-
-// Get all users
-export async function getAllUsers({
-  limit = PAGE_SIZE,
-  page,
-  query,
-}: {
-  limit?: number;
-  page: number;
-  query: string;
-}) {
-  await requireAdmin();
-
-  const queryFilter: Prisma.UserWhereInput =
-    query && query !== 'all'
-      ? {
-          name: {
-            contains: query,
-            mode: 'insensitive',
-          } as Prisma.StringFilter,
-        }
-      : {};
-
-  const data = await prisma.user.findMany({
-    where: {
-      ...queryFilter,
-    },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-    skip: (page - 1) * limit,
-  });
-
-  const dataCount = await prisma.user.count({
-    where: {
-      ...queryFilter,
-    },
-  });
-
-  return {
-    data,
-    totalPages: Math.ceil(dataCount / limit),
-  };
 }
 
 // Delete user by ID

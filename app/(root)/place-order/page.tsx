@@ -14,8 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getMyCart } from '@/lib/actions/cart.actions';
-import { getUserById } from '@/lib/actions/user.actions';
+import { getMyCart } from '@/lib/data/cart';
+import { getUserById } from '@/lib/data/user';
 import { formatCurrency } from '@/lib/utils';
 import { ShippingAddress } from '@/types';
 import PlaceOrderForm from './place-order-form';

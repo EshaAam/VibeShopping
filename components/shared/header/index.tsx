@@ -4,7 +4,7 @@ import Link from "next/link";
 import Menu from "./menu";
 import CategoriesDrawer from './categories-drawer';
 import Search from './search';
-import { getAllCategories } from '@/lib/actions/product.actions';
+import { getAllCategories } from '@/lib/data/product';
 
 const Header = async () => {
   const categoriesData = await getAllCategories();

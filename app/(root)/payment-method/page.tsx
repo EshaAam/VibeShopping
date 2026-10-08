@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { auth } from '@/auth';
-import { getUserById } from '@/lib/actions/user.actions';
+import { getUserById } from '@/lib/data/user';
 import PaymentMethodForm from './payment-method-form';
 
 export const metadata: Metadata = {

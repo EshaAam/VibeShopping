@@ -6,7 +6,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer';
-import { getAllCategories } from '@/lib/actions/product.actions';
+import { getAllCategories } from '@/lib/data/product';
 import { Button } from '@/components/ui/button';
 import { MenuIcon } from 'lucide-react';
 import Link from 'next/link';

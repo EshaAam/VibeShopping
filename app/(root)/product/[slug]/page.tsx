@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation";
 import ProductPrice from "@/components/shared/product/product-price";
 import { Card, CardContent } from "@/components/ui/card";
-import { getProductBySlug } from "@/lib/actions/product.actions";
+import { getProductBySlug } from '@/lib/data/product';
 // import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ProductImages from "@/components/shared/product/product-images";
 import AddToCart from "@/components/shared/product/add-to-cart";
-import { getMyCart } from "@/lib/actions/cart.actions";
-import { getMyWishlist } from "@/lib/actions/wishlist.actions";
+import { getMyCart } from '@/lib/data/cart';
+import { getMyWishlist } from '@/lib/data/wishlist';
 import { round2 } from "@/lib/utils";
 import { auth } from '@/auth';
 import ReviewList from './review-list';

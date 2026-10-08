@@ -7,63 +7,7 @@ import { cookies } from 'next/headers';
 import { formatError } from '../utils';
 import { wishlistItemSchema } from '../validator';
 import { revalidatePath } from 'next/cache';
-
-// Get user's wishlist
-export async function getMyWishlist() {
-  try {
-    const sessionWishlistId = (await cookies()).get('sessionWishlistId')?.value;
-    if (!sessionWishlistId) return undefined;
-
-    const session = await auth();
-    const userId = session?.user?.id;
-
-    const wishlist = await prisma.wishlist.findFirst({
-      where: userId ? { userId } : { sessionWishlistId },
-    });
-
-    if (!wishlist) return undefined;
-
-    // Safely parse items - handle corrupted data
-    const items: WishlistItem[] = [];
-
-    // The items field is Prisma.JsonValue[] which implies it could be any JSON type.
-    // However, we expect it to be an array of objects or strings that can be parsed into objects.
-    if (Array.isArray(wishlist.items)) {
-      for (const item of wishlist.items) {
-        if (!item) continue;
-
-        if (typeof item === 'string') {
-          // Check for known corruption patterns
-          if (item === '[object Object]' || item.includes('[object Object]')) continue;
-          
-          try {
-            const parsed = JSON.parse(item);
-            if (parsed && typeof parsed === 'object' && 'productId' in parsed) {
-              items.push(parsed as WishlistItem);
-            }
-          } catch {
-             // Failed to parse, ignore this item
-            continue;
-          }
-        } else if (typeof item === 'object' && 'productId' in item) {
-          items.push(item as WishlistItem);
-        }
-      }
-    }
-
-    return {
-      id: wishlist.id,
-      userId: wishlist.userId,
-      sessionWishlistId: wishlist.sessionWishlistId,
-      items,
-      createdAt: wishlist.createdAt,
-      updatedAt: wishlist.updatedAt,
-    };
-  } catch (error) {
-    console.error('Error in getMyWishlist:', error);
-    return undefined;
-  }
-}
+import { getMyWishlist } from '@/lib/data/wishlist';
 
 // Add item to wishlist
 export async function addItemToWishlist(data: WishlistItem) {
@@ -176,54 +120,5 @@ export async function removeItemFromWishlist(productId: string) {
     };
   } catch (error) {
     return { success: false, message: formatError(error) };
-  }
-}
-
-// Get shared wishlist by ID (public access)
-export async function getSharedWishlist(wishlistId: string) {
-  try {
-    const wishlist = await prisma.wishlist.findFirst({
-      where: { id: wishlistId },
-      include: {
-        user: { select: { name: true } },
-      },
-    });
-
-    if (!wishlist) return undefined;
-
-    // Safely parse items
-    const items: WishlistItem[] = [];
-
-    if (Array.isArray(wishlist.items)) {
-      for (const item of wishlist.items) {
-        if (!item) continue;
-
-        if (typeof item === 'string') {
-          if (item === '[object Object]' || item.includes('[object Object]')) continue;
-          
-          try {
-            const parsed = JSON.parse(item);
-            if (parsed && typeof parsed === 'object' && 'productId' in parsed) {
-              items.push(parsed as WishlistItem);
-            }
-          } catch {
-            continue;
-          }
-        } else if (typeof item === 'object' && 'productId' in item) {
-          items.push(item as WishlistItem);
-        }
-      }
-    }
-
-    return {
-      id: wishlist.id,
-      userId: wishlist.userId,
-      items,
-      createdAt: wishlist.createdAt,
-      updatedAt: wishlist.updatedAt,
-      userName: wishlist.user?.name || 'Someone',
-    };
-  } catch {
-    return undefined;
   }
 }

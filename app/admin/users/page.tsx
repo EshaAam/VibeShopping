@@ -9,7 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getAllUsers, deleteUser } from '@/lib/actions/user.actions';
+import { deleteUser } from '@/lib/actions/user.actions';
+import { getAllUsers } from '@/lib/data/user';
 import { formatId } from '@/lib/utils';
 import { Metadata } from 'next';
 import Link from 'next/link';

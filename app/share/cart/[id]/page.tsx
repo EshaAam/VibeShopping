@@ -1,4 +1,4 @@
-import { getSharedCart } from '@/lib/actions/cart.actions';
+import { getSharedCart } from '@/lib/data/cart';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Image from 'next/image';
