@@ -7,8 +7,10 @@ import { prisma } from '@/db/prisma';
 
 export async function requireUser() {
   const session = await auth();
-  if (!session?.user?.id) throw new Error('User is not authenticated');
-  return session;
+  const id = session?.user?.id;
+  if (!session || !id) throw new Error('User is not authenticated');
+  // Re-spread so callers get `user.id: string` rather than `string | undefined`
+  return { ...session, user: { ...session.user, id } };
 }
 
 export async function requireAdmin() {

@@ -23,6 +23,7 @@ export async function getOrderById(orderId: string) {
     include: {
       orderItems: true,
       user: { select: { name: true, email: true } },
+      events: { orderBy: { createdAt: 'asc' } },
     },
   });
 
@@ -136,39 +137,39 @@ export async function getSalesChartData(
     // Get daily sales for the last 14 days
     salesDataRaw = await prisma.$queryRaw`
       SELECT 
-        to_char("createdAt", 'DD Mon') as "label",
+        to_char("paidAt", 'DD Mon') as "label",
         COALESCE(sum("totalPrice"), 0) as "totalSales",
         count(*) as "orderCount"
       FROM "Order" 
-      WHERE "createdAt" >= NOW() - INTERVAL '14 days'
-        AND "isPaid" = true AND "orderStatus" <> 'Cancelled'
-      GROUP BY to_char("createdAt", 'DD Mon'), DATE("createdAt")
-      ORDER BY DATE("createdAt")
+      WHERE "paidAt" >= NOW() - INTERVAL '14 days'
+        AND "orderStatus" <> 'Cancelled'
+      GROUP BY to_char("paidAt", 'DD Mon'), DATE("paidAt")
+      ORDER BY DATE("paidAt")
     `;
   } else if (timeRange === 'monthly') {
     // Get monthly sales for the last 12 months
     salesDataRaw = await prisma.$queryRaw`
       SELECT 
-        to_char("createdAt", 'Mon YY') as "label",
+        to_char("paidAt", 'Mon YY') as "label",
         COALESCE(sum("totalPrice"), 0) as "totalSales",
         count(*) as "orderCount"
       FROM "Order" 
-      WHERE "createdAt" >= NOW() - INTERVAL '12 months'
-        AND "isPaid" = true AND "orderStatus" <> 'Cancelled'
-      GROUP BY to_char("createdAt", 'Mon YY'), DATE_TRUNC('month', "createdAt")
-      ORDER BY DATE_TRUNC('month', "createdAt")
+      WHERE "paidAt" >= NOW() - INTERVAL '12 months'
+        AND "orderStatus" <> 'Cancelled'
+      GROUP BY to_char("paidAt", 'Mon YY'), DATE_TRUNC('month', "paidAt")
+      ORDER BY DATE_TRUNC('month', "paidAt")
     `;
   } else {
     // Get yearly sales
     salesDataRaw = await prisma.$queryRaw`
       SELECT 
-        to_char("createdAt", 'YYYY') as "label",
+        to_char("paidAt", 'YYYY') as "label",
         COALESCE(sum("totalPrice"), 0) as "totalSales",
         count(*) as "orderCount"
       FROM "Order" 
-      WHERE "isPaid" = true AND "orderStatus" <> 'Cancelled'
-      GROUP BY to_char("createdAt", 'YYYY')
-      ORDER BY to_char("createdAt", 'YYYY')
+      WHERE "paidAt" IS NOT NULL AND "orderStatus" <> 'Cancelled'
+      GROUP BY to_char("paidAt", 'YYYY')
+      ORDER BY to_char("paidAt", 'YYYY')
     `;
   }
 

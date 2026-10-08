@@ -99,7 +99,7 @@ const AdminOrderDetailsTable = ({
             </div>
           )}
           
-          <OrderStatusTimeline currentStatus={currentStatus} />
+          <OrderStatusTimeline currentStatus={currentStatus} events={order.events} />
         </CardContent>
       </Card>
 

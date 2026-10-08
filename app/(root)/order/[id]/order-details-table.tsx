@@ -71,7 +71,7 @@ const OrderDetailsTable = ({
             </div>
           )}
           
-          <OrderStatusTimeline currentStatus={currentStatus} />
+          <OrderStatusTimeline currentStatus={currentStatus} events={order.events} />
         </CardContent>
       </Card>
 

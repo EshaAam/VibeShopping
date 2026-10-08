@@ -1,12 +1,59 @@
 'use client';
 
 import { Clock, Package, Truck, CheckCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { OrderStatus } from '@/types';
+import { cn, formatDateTime } from '@/lib/utils';
+import { OrderEvent, OrderStatus } from '@/types';
 
 interface OrderStatusTimelineProps {
   currentStatus: OrderStatus;
+  /** The order's event history, oldest first. Adds a timestamp to each step. */
+  events?: OrderEvent[];
   className?: string;
+}
+
+const EVENT_LABELS: Record<OrderEvent['type'], string> = {
+  Created: 'Order placed',
+  Paid: 'Payment received',
+  Processing: 'Processing',
+  Shipped: 'Shipped',
+  Delivered: 'Delivered',
+  Cancelled: 'Cancelled',
+};
+
+const formatWhen = (date: Date | string) =>
+  formatDateTime(new Date(date)).dateTime;
+
+// When the order reached a step, read from its history
+function reachedAt(events: OrderEvent[] | undefined, status: string) {
+  const type = status === 'Pending' ? 'Created' : status;
+  return events?.find((event) => event.type === type)?.createdAt;
+}
+
+function trackingOf(event: OrderEvent) {
+  const data = event.data as { trackingNumber?: string } | null | undefined;
+  return data?.trackingNumber;
+}
+
+function OrderHistory({ events }: { events?: OrderEvent[] }) {
+  if (!events || events.length === 0) return null;
+
+  return (
+    <ol className="mt-6 space-y-2 border-t pt-4 text-sm">
+      {events.map((event) => (
+        <li key={event.id} className="flex justify-between gap-4">
+          <span>
+            {EVENT_LABELS[event.type]}
+            {trackingOf(event) && (
+              <span className="text-muted-foreground"> · {trackingOf(event)}</span>
+            )}
+          </span>
+          <span className="text-muted-foreground shrink-0">
+            {formatWhen(event.createdAt)}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
 }
 
 const statusSteps = [
@@ -16,7 +63,7 @@ const statusSteps = [
   { status: 'Delivered', label: 'Delivered', icon: CheckCircle },
 ];
 
-export function OrderStatusTimeline({ currentStatus, className }: OrderStatusTimelineProps) {
+export function OrderStatusTimeline({ currentStatus, events, className }: OrderStatusTimelineProps) {
   // Handle cancelled orders
   if (currentStatus === 'Cancelled') {
     return (
@@ -25,6 +72,7 @@ export function OrderStatusTimeline({ currentStatus, className }: OrderStatusTim
           <span className="text-lg">❌</span>
           <span className="font-medium">This order has been cancelled</span>
         </div>
+        <OrderHistory events={events} />
       </div>
     );
   }
@@ -63,6 +111,11 @@ export function OrderStatusTimeline({ currentStatus, className }: OrderStatusTim
                 </p>
                 {isCurrent && (
                   <p className="text-xs text-muted-foreground">Current status</p>
+                )}
+                {isCompleted && reachedAt(events, step.status) && (
+                  <p className="text-xs text-muted-foreground">
+                    {formatWhen(reachedAt(events, step.status)!)}
+                  </p>
                 )}
               </div>
               {isCompleted && <span className="text-green-500">✓</span>}
@@ -111,11 +164,18 @@ export function OrderStatusTimeline({ currentStatus, className }: OrderStatusTim
                 {isCurrent && (
                   <span className="text-xs text-primary mt-1">Current</span>
                 )}
+                {isCompleted && reachedAt(events, step.status) && (
+                  <span className="text-xs text-muted-foreground mt-1">
+                    {formatWhen(reachedAt(events, step.status)!)}
+                  </span>
+                )}
               </div>
             );
           })}
         </div>
       </div>
+
+      <OrderHistory events={events} />
     </div>
   );
 }

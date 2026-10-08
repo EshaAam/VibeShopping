@@ -11,29 +11,7 @@ import { insertOrderSchema } from '../validator';
 import { prisma } from '@/db/prisma';
 import { CartItem } from '@/types';
 import { revalidatePath } from 'next/cache';
-
-// Move an order to Cancelled and put its items back in stock. The status
-// check in the WHERE clause makes this safe to call twice - only the call
-// that actually flips the status restocks.
-async function cancelAndRestock(orderId: string, fromStatus: string) {
-  await prisma.$transaction(async (tx) => {
-    const cancelled = await tx.order.updateMany({
-      where: { id: orderId, orderStatus: fromStatus },
-      data: { orderStatus: 'Cancelled' },
-    });
-    if (cancelled.count === 0) {
-      throw new Error('Order status changed, please refresh and try again');
-    }
-
-    const items = await tx.orderItem.findMany({ where: { orderId } });
-    for (const item of items) {
-      await tx.product.update({
-        where: { id: item.productId },
-        data: { stock: { increment: item.qty } },
-      });
-    }
-  });
-}
+import { createOrderRecord, recordPayment, transitionOrder } from '@/lib/orders';
 
 // Create an order
 export async function createOrder() {
@@ -93,7 +71,7 @@ export async function createOrder() {
         ...calcPrice(orderItems),
       });
 
-      const insertedOrder = await tx.order.create({ data: order });
+      const insertedOrder = await createOrderRecord(tx, order, user.id);
       await tx.orderItem.createMany({
         data: orderItems.map((item) => ({
           ...item,
@@ -127,7 +105,7 @@ export async function createOrder() {
 // Stripe flow verifies payment itself in payment.actions.
 export async function updateOrderToPaid(orderId: string) {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
 
     const order = await prisma.order.findFirst({ where: { id: orderId } });
     if (!order) throw new Error('Order not found');
@@ -136,20 +114,18 @@ export async function updateOrderToPaid(orderId: string) {
       throw new Error('Cannot mark a cancelled order as paid');
     }
 
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        isPaid: true,
-        paidAt: new Date(),
-        orderStatus: 'Processing', // Automatically move to Processing when paid
+    const paid = await prisma.$transaction((tx) =>
+      recordPayment(tx, orderId, {
+        actorId: session.user.id,
         paymentResult: {
           id: `COD_${Date.now()}`,
           status: 'COMPLETED',
           email_address: '',
           pricePaid: order.totalPrice.toString(),
         },
-      },
-    });
+      })
+    );
+    if (!paid) throw new Error('Order is already paid or was cancelled');
 
     revalidatePath(`/order/${orderId}`);
 
@@ -177,49 +153,21 @@ export async function updateOrderToPaidByCOD(orderId: string) {
 // Update Order To Delivered
 export async function deliverOrder(orderId: string) {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
 
-    const order = await prisma.order.findFirst({
-      where: {
-        id: orderId,
-      },
-    });
-
+    const order = await prisma.order.findFirst({ where: { id: orderId } });
     if (!order) throw new Error('Order not found');
     if (!order.isPaid) throw new Error('Order is not paid');
 
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        isDelivered: true,
-        deliveredAt: new Date(),
-        orderStatus: 'Delivered', // Also update order status
-      },
-    });
+    await prisma.$transaction((tx) =>
+      transitionOrder(tx, orderId, 'Delivered', { actorId: session.user.id })
+    );
 
     revalidatePath(`/order/${orderId}`);
 
     return { success: true, message: 'Order delivered successfully' };
   } catch (err) {
     return { success: false, message: formatError(err) };
-  }
-}
-
-// Delete Order
-export async function deleteOrder(id: string) {
-  try {
-    await requireAdmin();
-
-    await prisma.order.delete({ where: { id } });
-
-    revalidatePath('/admin/orders');
-
-    return {
-      success: true,
-      message: 'Order deleted successfully',
-    };
-  } catch (error) {
-    return { success: false, message: formatError(error) };
   }
 }
 
@@ -230,57 +178,19 @@ export async function updateOrderStatus(
   trackingNumber?: string
 ) {
   try {
-    await requireAdmin();
+    const session = await requireAdmin();
 
-    const order = await prisma.order.findFirst({
-      where: { id: orderId },
-    });
-
-    if (!order) throw new Error('Order not found');
-
-    // Validate status transitions
-    const currentStatus = order.orderStatus || 'Pending';
-    const validTransitions: Record<string, string[]> = {
-      Pending: ['Processing', 'Cancelled'],
-      Processing: ['Shipped', 'Cancelled'],
-      Shipped: ['Delivered'],
-      Delivered: [],
-      Cancelled: [],
-    };
-
-    if (!validTransitions[currentStatus]?.includes(newStatus)) {
-      throw new Error(`Cannot change status from ${currentStatus} to ${newStatus}`);
+    if (newStatus === 'Pending') {
+      throw new Error('Cannot move an order back to Pending');
     }
 
-    // Prepare update data
-    const updateData: {
-      orderStatus: string;
-      trackingNumber?: string;
-      isDelivered?: boolean;
-      deliveredAt?: Date;
-    } = {
-      orderStatus: newStatus,
-    };
-
-    // Add tracking number for shipped orders
-    if (newStatus === 'Shipped' && trackingNumber) {
-      updateData.trackingNumber = trackingNumber;
-    }
-
-    // Update isDelivered if status is Delivered
-    if (newStatus === 'Delivered') {
-      updateData.isDelivered = true;
-      updateData.deliveredAt = new Date();
-    }
-
-    if (newStatus === 'Cancelled') {
-      await cancelAndRestock(orderId, currentStatus);
-    } else {
-      await prisma.order.update({
-        where: { id: orderId },
-        data: updateData,
-      });
-    }
+    // Validation, the status update and the history row all happen together
+    await prisma.$transaction((tx) =>
+      transitionOrder(tx, orderId, newStatus, {
+        actorId: session.user.id,
+        trackingNumber,
+      })
+    );
 
     revalidatePath(`/order/${orderId}`);
     revalidatePath('/admin/orders');
@@ -311,7 +221,9 @@ export async function cancelOrder(orderId: string) {
       throw new Error('Cannot cancel order: Order has already been shipped or delivered');
     }
 
-    await cancelAndRestock(orderId, currentStatus);
+    await prisma.$transaction((tx) =>
+      transitionOrder(tx, orderId, 'Cancelled', { actorId: session.user.id })
+    );
 
     revalidatePath(`/order/${orderId}`);
     revalidatePath('/user/orders');

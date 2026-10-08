@@ -25,6 +25,13 @@ export type OrderItem = z.infer<typeof insertOrderItemSchema>;
 
 export type OrderStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
 
+export type OrderEvent = {
+  id: string;
+  type: 'Created' | 'Paid' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
+  createdAt: Date | string;
+  data?: unknown;
+};
+
 export type Order = z.infer<typeof insertOrderSchema> & {
   id: string;
   createdAt: Date;
@@ -36,6 +43,7 @@ export type Order = z.infer<typeof insertOrderSchema> & {
   trackingNumber?: string | null;
   orderItems: OrderItem[];
   user: { name: string; email: string };
+  events?: OrderEvent[];
 };
 
 export type Review = z.infer<typeof insertReviewSchema> & {

@@ -107,11 +107,47 @@ model Order {
   paidAt          DateTime?   @db.Timestamp(6)
   isDelivered     Boolean     @default(false)
   deliveredAt     DateTime?   @db.Timestamp(6)
-  orderStatus     String      @default("Pending")
+  orderStatus     OrderStatus @default(Pending)
   trackingNumber  String?
   createdAt       DateTime    @default(now()) @db.Timestamp(6)
   user            User        @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "order_userId_user_id_fk")
   orderItems      OrderItem[]
+  events          OrderEvent[]
+}
+
+enum OrderStatus {
+  Pending
+  Processing
+  Shipped
+  Delivered
+  Cancelled
+}
+
+enum OrderEventType {
+  Created
+  Paid
+  Processing
+  Shipped
+  Delivered
+  Cancelled
+}
+
+/// Append-only history of an order. Every change to an order's status or
+/// payment writes one row here in the same transaction, and a trigger rejects
+/// UPDATE and DELETE, so this is the audit trail the flags on Order are
+/// projected from.
+model OrderEvent {
+  id        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId   String         @db.Uuid
+  type      OrderEventType
+  /// Who did it. Null for the system (e.g. the Stripe webhook). No FK, so the
+  /// trail survives the actor's account being deleted.
+  actorId   String?        @db.Uuid
+  data      Json?          @db.Json
+  createdAt DateTime       @default(now()) @db.Timestamp(6)
+  order     Order          @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "orderEvent_orderId_order_id_fk")
+
+  @@index([orderId, createdAt])
 }
 
 model OrderItem {

@@ -6,8 +6,6 @@ import { formatCurrency, formatDateTime, formatId } from '@/lib/utils';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { InvoiceDialog } from '@/components/shared/invoice';
-import DeleteDialog from '@/components/shared/delete-dialog';
-import { deleteOrder } from '@/lib/actions/order.actions';
 import { OrderStatusBadge } from '@/components/shared/order/order-status-badge';
 
 interface AdminOrderTableRowProps {
@@ -37,7 +35,6 @@ const AdminOrderTableRow = ({ order }: AdminOrderTableRowProps) => {
         {order.isPaid && (
           <InvoiceDialog order={order} variant="outline" size="sm" />
         )}
-        <DeleteDialog id={order.id} action={deleteOrder} />
       </TableCell>
     </TableRow>
   );
