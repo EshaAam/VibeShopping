@@ -81,8 +81,13 @@ export const config = {
           const sessionWishlistId = cookiesObject.get('sessionWishlistId')?.value;
 
           if (sessionCartId) {
+            // Only claim a guest cart (or one already ours). On a shared
+            // browser the session cart can belong to someone else's account.
             const sessionCart = await prisma.cart.findFirst({
-              where: { sessionCartId },
+              where: {
+                sessionCartId,
+                OR: [{ userId: null }, { userId: user.id }],
+              },
             });
 
             if (sessionCart) {
@@ -104,7 +109,10 @@ export const config = {
           // Handle wishlist merge on sign-in
           if (sessionWishlistId) {
             const sessionWishlist = await prisma.wishlist.findFirst({
-              where: { sessionWishlistId },
+              where: {
+                sessionWishlistId,
+                OR: [{ userId: null }, { userId: user.id }],
+              },
             });
 
             if (sessionWishlist) {

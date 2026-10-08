@@ -10,6 +10,33 @@ import { cartItemSchema, insertCartSchema } from "../validator";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 
+const MAX_CART_RETRIES = 3;
+
+// Read the cart, apply `change` to its items, and save only if nobody else
+// saved in between (optimistic concurrency on Cart.version). Two quick clicks
+// both read version N; the first write moves it to N+1, so the second matches
+// zero rows, re-reads, and applies its change on top instead of overwriting.
+async function updateCartItems(change: (items: CartItem[]) => CartItem[]) {
+  for (let attempt = 0; attempt < MAX_CART_RETRIES; attempt++) {
+    const cart = await getMyCart();
+    if (!cart) throw new Error("Cart not found");
+
+    const items = change(structuredClone(cart.items as CartItem[]));
+
+    const saved = await prisma.cart.updateMany({
+      where: { id: cart.id, version: cart.version },
+      data: {
+        items: items as Prisma.InputJsonValue[],
+        ...calcPrice(items),
+        version: { increment: 1 },
+      },
+    });
+    if (saved.count === 1) return items;
+  }
+
+  throw new Error("Your cart was changed elsewhere, please try again");
+}
+
 export async function addItemToCart(data: CartItem) {
   try {
     const sessionCartId = (await cookies()).get("sessionCartId")?.value;
@@ -19,8 +46,6 @@ export async function addItemToCart(data: CartItem) {
     // Calls NextAuth to get the current user's session
     const session = await auth();
     const userId = session?.user?.id ? (session.user.id as string) : undefined;
-    //get cart
-    const cart = await getMyCart();
     const { productId } = cartItemSchema.parse(data);
     // Find product in database
     const product = await prisma.product.findFirst({
@@ -40,68 +65,47 @@ export async function addItemToCart(data: CartItem) {
       qty: 1,
     };
 
-    if (!cart) {
+    if (!(await getMyCart())) {
       if (product.stock < 1) throw new Error("Not enough stock");
 
-      // Create new cart object
-      const newCart = insertCartSchema.parse({
-        userId: userId,
-        items: [item],
-        sessionCartId: sessionCartId,
-        ...calcPrice([item]),
-      });
-      // Testing
-      // console.log(newCart);
-      // Add to database
       await prisma.cart.create({
-        data: newCart,
+        data: insertCartSchema.parse({
+          userId: userId,
+          items: [item],
+          sessionCartId: sessionCartId,
+          ...calcPrice([item]),
+        }),
       });
 
-      // Revalidate product page
-      // to update stock count if product is featured
       revalidatePath(`/product/${product.slug}`);
-
       return {
         success: true,
         message: "Item added to cart successfully",
       };
-    } else {
-      //check for existing item in the cart
-      const existItem = (cart.items as CartItem[]).find(
-        (x) => x.productId === item.productId
-      );
-      // If not enough stock, throw error
-      if (existItem) {
-        if (product.stock < existItem.qty + 1) {
-          throw new Error("Not enough stock");
-        }
+    }
 
-        // Increase quantity of existing item
-        (cart.items as CartItem[]).find(
-          (x) => x.productId === item.productId
-        )!.qty = existItem.qty + 1;
-      } else {
-        // If stock, add item to cart
-        if (product.stock < 1) throw new Error("Not enough stock");
-        cart.items.push(item);
+    let existed = false;
+    await updateCartItems((items) => {
+      const existing = items.find((x) => x.productId === item.productId);
+      existed = !!existing;
+
+      if (existing) {
+        if (product.stock < existing.qty + 1) throw new Error("Not enough stock");
+        existing.qty += 1;
+        return items;
       }
 
-      // Save to database
-      await prisma.cart.update({
-        where: { id: cart.id },
-        data: {
-          items: cart.items as Prisma.CartUpdateitemsInput[],
-          ...calcPrice(cart.items as CartItem[]),
-        },
-      });
-      revalidatePath(`/product/${product.slug}`);
-      return {
-        success: true,
-        message: `${product.name} ${
-          existItem ? "updated in" : "added to"
-        } cart successfully`,
-      };
-    }
+      if (product.stock < 1) throw new Error("Not enough stock");
+      return [...items, item];
+    });
+
+    revalidatePath(`/product/${product.slug}`);
+    return {
+      success: true,
+      message: `${product.name} ${
+        existed ? "updated in" : "added to"
+      } cart successfully`,
+    };
   } catch (error) {
     return { success: false, message: formatError(error) };
   }
@@ -120,35 +124,16 @@ export async function removeItemFromCart(productId: string) {
     });
     if (!product) throw new Error("Product not found");
 
-    // Get user cart
-    const cart = await getMyCart();
-    if (!cart) throw new Error("Cart not found");
+    const items = await updateCartItems((current) => {
+      const existing = current.find((x) => x.productId === productId);
+      if (!existing) throw new Error("Item not found");
 
-    // Check if cart has item
-    const exist = (cart.items as CartItem[]).find(
-      (x) => x.productId === productId
-    );
-    if (!exist) throw new Error("Item not found");
-
-    // Check if cart has only one item
-    if (exist.qty === 1) {
-      // Remove item from cart
-      cart.items = (cart.items as CartItem[]).filter(
-        (x) => x.productId !== exist.productId
-      );
-    } else {
-      // Decrease quantity of existing item
-      (cart.items as CartItem[]).find((x) => x.productId === productId)!.qty =
-        exist.qty - 1;
-    }
-
-    // Update cart in database
-    await prisma.cart.update({
-      where: { id: cart.id },
-      data: {
-        items: cart.items as Prisma.CartUpdateitemsInput[],
-        ...calcPrice(cart.items as CartItem[]),
-      },
+      // Last one goes, otherwise drop the quantity by one
+      if (existing.qty === 1) {
+        return current.filter((x) => x.productId !== productId);
+      }
+      existing.qty -= 1;
+      return current;
     });
 
     // Revalidate product page
@@ -157,7 +142,7 @@ export async function removeItemFromCart(productId: string) {
     return {
       success: true,
       message: `${product.name} ${
-        (cart.items as CartItem[]).find((x) => x.productId === productId)
+        items.find((x) => x.productId === productId)
           ? "updated in"
           : "removed from"
       } cart successfully`,
