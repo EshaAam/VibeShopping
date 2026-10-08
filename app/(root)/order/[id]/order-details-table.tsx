@@ -10,15 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useToast } from '@/hooks/use-toast';
 import { formatCurrency, formatDateTime, formatId } from '@/lib/utils';
 import { Order, OrderStatus } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { updateOrderToPaid } from '@/lib/actions/order.actions';
-import { useTransition } from 'react';
-import { CreditCard, Loader, Wallet, Package } from 'lucide-react';
+import { Wallet, Package } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { InvoiceDialog } from '@/components/shared/invoice';
 import { OrderStatusTimeline } from '@/components/shared/order/order-status-timeline';
@@ -48,30 +44,7 @@ const OrderDetailsTable = ({
 
   const currentStatus = (orderStatus || 'Pending') as OrderStatus;
 
-  const { toast } = useToast();
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  const handlePayment = async () => {
-    startTransition(async () => {
-      const res = await updateOrderToPaid(order.id);
-
-      if (!res.success) {
-        toast({
-          variant: 'destructive',
-          description: res.message,
-        });
-        return;
-      }
-
-      toast({
-        description: `✅ Payment successful via ${paymentMethod}!`,
-      });
-
-      // Refresh the page to show updated payment status
-      router.refresh();
-    });
-  };
 
   return (
     <>
@@ -205,36 +178,12 @@ const OrderDetailsTable = ({
                       onPaymentSuccess={() => router.refresh()}
                     />
                   ) : (
-                    <>
-                      <Button
-                        onClick={handlePayment}
-                        disabled={isPending}
-                        className='w-full'
-                        size='lg'
-                      >
-                        {isPending ? (
-                          <>
-                            <Loader className='w-4 h-4 mr-2 animate-spin' />
-                            Processing Payment...
-                          </>
-                        ) : (
-                          <>
-                            {paymentMethod === 'CashOnDelivery' && (
-                              <Wallet className='w-4 h-4 mr-2' />
-                            )}
-                            {paymentMethod !== 'CashOnDelivery' && (
-                              <CreditCard className='w-4 h-4 mr-2' />
-                            )}
-                            {paymentMethod === 'CashOnDelivery' ? 'Mark as Paid (COD)' : `Pay with ${paymentMethod}`}
-                          </>
-                        )}
-                      </Button>
-                      {paymentMethod === 'CashOnDelivery' && (
-                        <p className='text-xs text-muted-foreground text-center mt-2'>
-                          💵 Pay when your order arrives
-                        </p>
-                      )}
-                    </>
+                    // Cash on delivery is collected by the courier and
+                    // marked paid by an admin, never by the customer.
+                    <p className='flex items-center justify-center text-sm text-muted-foreground'>
+                      <Wallet className='w-4 h-4 mr-2' />
+                      Pay when your order arrives
+                    </p>
                   )}
                 </div>
               )}

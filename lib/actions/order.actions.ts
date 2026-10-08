@@ -3,6 +3,7 @@
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { calcPrice, formatError, convertToPlainObject } from '../utils';
 import { auth } from '@/auth';
+import { requireAdmin } from '../auth-guard';
 import { getMyCart } from './cart.actions';
 import { getUserById } from './user.actions';
 import { insertOrderSchema } from '../validator';
@@ -137,9 +138,19 @@ export async function getOrderById(orderId: string) {
   return convertToPlainObject(data);
 }
 
-// Update order to paid (Mock Payment)
+// Mark an order as paid outside Stripe (cash on delivery). Admin only - the
+// Stripe flow verifies payment itself in payment.actions.
 export async function updateOrderToPaid(orderId: string) {
   try {
+    await requireAdmin();
+
+    const order = await prisma.order.findFirst({ where: { id: orderId } });
+    if (!order) throw new Error('Order not found');
+    if (order.isPaid) throw new Error('Order is already paid');
+    if (order.orderStatus === 'Cancelled') {
+      throw new Error('Cannot mark a cancelled order as paid');
+    }
+
     await prisma.order.update({
       where: { id: orderId },
       data: {
@@ -147,10 +158,10 @@ export async function updateOrderToPaid(orderId: string) {
         paidAt: new Date(),
         orderStatus: 'Processing', // Automatically move to Processing when paid
         paymentResult: {
-          id: `MOCK_${Date.now()}`,
+          id: `COD_${Date.now()}`,
           status: 'COMPLETED',
-          email_address: 'customer@example.com',
-          pricePaid: '0.00',
+          email_address: '',
+          pricePaid: order.totalPrice.toString(),
         },
       },
     });
@@ -169,7 +180,8 @@ export async function updateOrderToPaid(orderId: string) {
 // Update Order To Paid By COD
 export async function updateOrderToPaidByCOD(orderId: string) {
   try {
-    await updateOrderToPaid(orderId);
+    const res = await updateOrderToPaid(orderId);
+    if (!res.success) return res;
     revalidatePath(`/order/${orderId}`);
     return { success: true, message: 'Order paid successfully' };
   } catch (err) {
@@ -180,6 +192,8 @@ export async function updateOrderToPaidByCOD(orderId: string) {
 // Update Order To Delivered
 export async function deliverOrder(orderId: string) {
   try {
+    await requireAdmin();
+
     const order = await prisma.order.findFirst({
       where: {
         id: orderId,
@@ -249,6 +263,8 @@ export async function getAllOrders({
   limit?: number;
   page: number;
 }) {
+  await requireAdmin();
+
   const queryFilter: Prisma.OrderWhereInput =
     query && query !== 'all'
       ? {
@@ -292,6 +308,8 @@ export async function getAllOrders({
 export async function getSalesChartData(
   timeRange: 'daily' | 'monthly' | 'yearly'
 ) {
+  await requireAdmin();
+
   let salesDataRaw: Array<{
     label: string;
     totalSales: Prisma.Decimal;
@@ -344,6 +362,8 @@ export async function getSalesChartData(
 
 // Get sales data and order summary
 export async function getOrderSummary() {
+  await requireAdmin();
+
   // Get counts for each resource
   const ordersCount = await prisma.order.count();
   const productsCount = await prisma.product.count();
@@ -379,6 +399,8 @@ export async function getOrderSummary() {
 // Delete Order
 export async function deleteOrder(id: string) {
   try {
+    await requireAdmin();
+
     await prisma.order.delete({ where: { id } });
 
     revalidatePath('/admin/orders');
@@ -399,10 +421,7 @@ export async function updateOrderStatus(
   trackingNumber?: string
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.role || session.user.role !== 'admin') {
-      throw new Error('Unauthorized: Admin access required');
-    }
+    await requireAdmin();
 
     const order = await prisma.order.findFirst({
       where: { id: orderId },

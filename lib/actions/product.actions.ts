@@ -7,6 +7,7 @@ import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { insertProductSchema, updateProductSchema } from '../validator';
 import { z } from 'zod';
+import { requireAdmin } from '../auth-guard';
 
 //get the latest products
 export async function getLatestProducts() {
@@ -136,6 +137,8 @@ export async function getAllProducts({
 // Delete Product
 export async function deleteProduct(id: string) {
   try {
+    await requireAdmin();
+
     const productExists = await prisma.product.findFirst({
       where: { id },
     });
@@ -158,6 +161,8 @@ export async function deleteProduct(id: string) {
 // Create Product
 export async function createProduct(data: z.infer<typeof insertProductSchema>) {
   try {
+    await requireAdmin();
+
     // Validate and create product
     const product = insertProductSchema.parse(data);
     await prisma.product.create({ data: product });
@@ -176,6 +181,8 @@ export async function createProduct(data: z.infer<typeof insertProductSchema>) {
 // Update Product
 export async function updateProduct(data: z.infer<typeof updateProductSchema>) {
   try {
+    await requireAdmin();
+
     // Validate and find product
     const product = updateProductSchema.parse(data);
     const productExists = await prisma.product.findFirst({

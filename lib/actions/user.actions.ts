@@ -7,7 +7,8 @@ import { hashSync } from "bcrypt-ts-edge";
 import { prisma } from "@/db/prisma";
 import { formatError } from "../utils";
 import { ShippingAddress } from "@/types";
-import { PAGE_SIZE } from '@/lib/constants';
+import { PAGE_SIZE, USER_ROLES } from '@/lib/constants';
+import { requireAdmin, requireUser } from '../auth-guard';
 import { revalidatePath } from 'next/cache';
 import { Prisma } from '@prisma/client';
 
@@ -76,10 +77,17 @@ export async function signOutUser() {
   await signOut();
 }
 
-// Get user by ID
+// Get user by ID - your own record, or anyone's if you're an admin.
+// The password hash is never selected, so it can't leak into a client payload.
 export async function getUserById(userId: string) {
+  const session = await requireUser();
+  if (session.user.id !== userId && session.user.role !== 'admin') {
+    throw new Error('Unauthorized');
+  }
+
   const user = await prisma.user.findFirst({
     where: { id: userId },
+    omit: { password: true },
   });
 
   if (!user) throw new Error('User not found');
@@ -189,6 +197,8 @@ export async function getAllUsers({
   page: number;
   query: string;
 }) {
+  await requireAdmin();
+
   const queryFilter: Prisma.UserWhereInput =
     query && query !== 'all'
       ? {
@@ -223,6 +233,8 @@ export async function getAllUsers({
 // Delete user by ID
 export async function deleteUser(id: string) {
   try {
+    await requireAdmin();
+
     await prisma.user.delete({ where: { id } });
 
     revalidatePath('/admin/users');
@@ -237,8 +249,15 @@ export async function deleteUser(id: string) {
 }
 
 // Update user
-export async function updateUser(user: z.infer<typeof updateUserSchema>) {
+export async function updateUser(data: z.infer<typeof updateUserSchema>) {
   try {
+    await requireAdmin();
+
+    const user = updateUserSchema.parse(data);
+    if (!(USER_ROLES as readonly string[]).includes(user.role)) {
+      throw new Error('Invalid role');
+    }
+
     await prisma.user.update({
       where: { id: user.id },
       data: {
