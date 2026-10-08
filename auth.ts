@@ -159,6 +159,11 @@ export const config = {
       // Check if user is not authenticated and on a protected path
       if (!auth && protectedPaths.some((p) => p.test(pathname))) return false;
 
+      // Signed in is not enough for the admin area
+      if (/^\/admin/.test(pathname) && auth?.user?.role !== "admin") {
+        return NextResponse.redirect(new URL("/", request.nextUrl));
+      }
+
       // Check if cookies need to be set
       const hasCartCookie = request.cookies.get("sessionCartId");
       const hasWishlistCookie = request.cookies.get("sessionWishlistId");

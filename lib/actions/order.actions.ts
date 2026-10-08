@@ -3,7 +3,7 @@
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { calcPrice, formatError, convertToPlainObject } from '../utils';
 import { auth } from '@/auth';
-import { requireAdmin } from '../auth-guard';
+import { requireAdmin, requireUser } from '../auth-guard';
 import { getMyCart } from './cart.actions';
 import { getUserById } from './user.actions';
 import { insertOrderSchema } from '../validator';
@@ -124,8 +124,10 @@ export async function createOrder() {
   }
 }
 
-// Get order by ID
+// Get order by ID - only the customer who placed it, or an admin, can see it
 export async function getOrderById(orderId: string) {
+  const session = await requireUser();
+
   const data = await prisma.order.findFirst({
     where: {
       id: orderId,
@@ -135,6 +137,14 @@ export async function getOrderById(orderId: string) {
       user: { select: { name: true, email: true } },
     },
   });
+
+  if (
+    !data ||
+    (data.userId !== session.user.id && session.user.role !== 'admin')
+  ) {
+    return null;
+  }
+
   return convertToPlainObject(data);
 }
 

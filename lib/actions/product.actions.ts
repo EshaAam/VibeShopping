@@ -145,6 +145,16 @@ export async function deleteProduct(id: string) {
 
     if (!productExists) throw new Error('Product not found');
 
+    // Order history references products, so a sold product can't be deleted.
+    const soldBefore = await prisma.orderItem.findFirst({
+      where: { productId: id },
+    });
+    if (soldBefore) {
+      throw new Error(
+        'This product appears in past orders and cannot be deleted. Set its stock to 0 to stop selling it.'
+      );
+    }
+
     await prisma.product.delete({ where: { id } });
 
     revalidatePath('/admin/products');

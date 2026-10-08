@@ -235,6 +235,12 @@ export async function deleteUser(id: string) {
   try {
     await requireAdmin();
 
+    // Orders are financial records and outlive the account that placed them.
+    const hasOrders = await prisma.order.findFirst({ where: { userId: id } });
+    if (hasOrders) {
+      throw new Error('This user has orders and cannot be deleted.');
+    }
+
     await prisma.user.delete({ where: { id } });
 
     revalidatePath('/admin/users');
