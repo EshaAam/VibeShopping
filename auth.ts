@@ -86,16 +86,18 @@ export const config = {
             });
 
             if (sessionCart) {
-              // Overwrite any existing user cart
-              await prisma.cart.deleteMany({
-                where: { userId: user.id },
-              });
-
-              // Assign the guest cart to the logged-in user
-              await prisma.cart.update({
-                where: { id: sessionCart.id },
-                data: { userId: user.id },
-              });
+              // Replace the user's stored cart with the guest cart in one
+              // transaction. The guest cart itself is excluded from the delete,
+              // since it may already belong to this user from an earlier login.
+              await prisma.$transaction([
+                prisma.cart.deleteMany({
+                  where: { userId: user.id, id: { not: sessionCart.id } },
+                }),
+                prisma.cart.update({
+                  where: { id: sessionCart.id },
+                  data: { userId: user.id },
+                }),
+              ]);
             }
           }
 
@@ -106,22 +108,23 @@ export const config = {
             });
 
             if (sessionWishlist) {
-              // Overwrite any existing user wishlist
-              await prisma.wishlist.deleteMany({
-                where: { userId: user.id },
-              });
-
-              // Assign the guest wishlist to the logged-in user
-              await prisma.wishlist.update({
-                where: { id: sessionWishlist.id },
-                data: { userId: user.id },
-              });
+              // Same swap as the cart above
+              await prisma.$transaction([
+                prisma.wishlist.deleteMany({
+                  where: { userId: user.id, id: { not: sessionWishlist.id } },
+                }),
+                prisma.wishlist.update({
+                  where: { id: sessionWishlist.id },
+                  data: { userId: user.id },
+                }),
+              ]);
             }
           }
         }
 
         // If user has no name, use email as their default name
-        if (user.name === "NO_NAME") {
+        // Must match the column default in schema.prisma
+        if (user.name === "No_Name") {
           token.name = user.email!.split("@")[0];
 
           // Update the user in the database with the new name
