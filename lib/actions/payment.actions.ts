@@ -1,52 +1,41 @@
 'use server';
 
 import { stripe } from '@/lib/stripe';
-import { prisma } from '@/db/prisma';
-import { auth } from '@/auth';
 import { formatError } from '@/lib/utils';
-import { revalidatePath } from 'next/cache';
+import { requireOrderOwner } from '@/lib/auth-guard';
+import { markOrderPaid } from '@/lib/payments';
 
 // Create Stripe Payment Intent for an order
 export async function createStripePaymentIntent(orderId: string) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      throw new Error('User is not authenticated');
-    }
-
-    // Get the order
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: { user: true },
-    });
-
-    if (!order) {
-      throw new Error('Order not found');
-    }
-
-    if (order.userId !== session.user.id) {
-      throw new Error('Unauthorized');
-    }
+    const { order } = await requireOrderOwner(orderId, { allowAdmin: false });
 
     if (order.isPaid) {
       throw new Error('Order is already paid');
+    }
+    if (order.orderStatus === 'Cancelled') {
+      throw new Error('This order has been cancelled');
     }
 
     // Convert totalPrice to cents (Stripe uses smallest currency unit)
     const amountInCents = Math.round(Number(order.totalPrice) * 100);
 
-    // Create a Payment Intent
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: amountInCents,
-      currency: 'usd',
-      metadata: {
-        orderId: order.id,
-        userId: order.userId,
+    // The idempotency key makes reloads and double clicks return the same
+    // intent instead of piling up new ones - fewer chances to charge twice.
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: amountInCents,
+        currency: 'usd',
+        metadata: {
+          orderId: order.id,
+          userId: order.userId,
+        },
+        automatic_payment_methods: {
+          enabled: true,
+        },
       },
-      automatic_payment_methods: {
-        enabled: true,
-      },
-    });
+      { idempotencyKey: `order-${order.id}-${amountInCents}` }
+    );
 
     return {
       success: true,
@@ -58,88 +47,32 @@ export async function createStripePaymentIntent(orderId: string) {
   }
 }
 
-// Confirm Stripe payment and update order
+// Confirm Stripe payment right after the card succeeds in the browser. The
+// webhook would get there too; this just updates the order without waiting.
 export async function confirmStripePayment(
   orderId: string,
   paymentIntentId: string
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      throw new Error('User is not authenticated');
-    }
+    await requireOrderOwner(orderId, { allowAdmin: false });
 
-    // Verify the payment intent with Stripe
+    // Verify the payment intent with Stripe rather than trusting the client
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-    if (paymentIntent.status !== 'succeeded') {
-      throw new Error('Payment not successful');
-    }
-
-    // Verify the order matches
+    // Block replaying a cheap intent against a different order
     if (paymentIntent.metadata.orderId !== orderId) {
       throw new Error('Payment intent does not match order');
     }
 
-    // Get the order
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-    });
-
-    if (!order) {
-      throw new Error('Order not found');
-    }
-
-    if (order.isPaid) {
-      return { success: true, message: 'Order already paid' };
-    }
-
-    // Update order to paid
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        isPaid: true,
-        paidAt: new Date(),
-        orderStatus: 'Processing',
-        paymentResult: {
-          id: paymentIntentId,
-          status: paymentIntent.status,
-          email_address: session.user.email || '',
-          pricePaid: (paymentIntent.amount / 100).toFixed(2),
-        },
-      },
-    });
-
-    revalidatePath(`/order/${orderId}`);
+    const result = await markOrderPaid(paymentIntent);
+    if (result.status === 'rejected') throw new Error(result.reason);
 
     return {
       success: true,
-      message: 'Payment successful! Your order is being processed.',
-    };
-  } catch (error) {
-    return { success: false, message: formatError(error) };
-  }
-}
-
-// Get Stripe payment status for an order
-export async function getStripePaymentStatus(orderId: string) {
-  try {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      select: {
-        isPaid: true,
-        paymentResult: true,
-      },
-    });
-
-    if (!order) {
-      throw new Error('Order not found');
-    }
-
-    return {
-      success: true,
-      isPaid: order.isPaid,
-      paymentResult: order.paymentResult,
+      message:
+        result.status === 'paid'
+          ? 'Payment successful! Your order is being processed.'
+          : 'Order already paid',
     };
   } catch (error) {
     return { success: false, message: formatError(error) };
