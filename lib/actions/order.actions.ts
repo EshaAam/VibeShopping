@@ -335,6 +335,7 @@ export async function getSalesChartData(
         count(*) as "orderCount"
       FROM "Order" 
       WHERE "createdAt" >= NOW() - INTERVAL '14 days'
+        AND "isPaid" = true AND "orderStatus" <> 'Cancelled'
       GROUP BY to_char("createdAt", 'DD Mon'), DATE("createdAt")
       ORDER BY DATE("createdAt")
     `;
@@ -347,6 +348,7 @@ export async function getSalesChartData(
         count(*) as "orderCount"
       FROM "Order" 
       WHERE "createdAt" >= NOW() - INTERVAL '12 months'
+        AND "isPaid" = true AND "orderStatus" <> 'Cancelled'
       GROUP BY to_char("createdAt", 'Mon YY'), DATE_TRUNC('month', "createdAt")
       ORDER BY DATE_TRUNC('month', "createdAt")
     `;
@@ -358,6 +360,7 @@ export async function getSalesChartData(
         COALESCE(sum("totalPrice"), 0) as "totalSales",
         count(*) as "orderCount"
       FROM "Order" 
+      WHERE "isPaid" = true AND "orderStatus" <> 'Cancelled'
       GROUP BY to_char("createdAt", 'YYYY')
       ORDER BY to_char("createdAt", 'YYYY')
     `;
@@ -379,9 +382,10 @@ export async function getOrderSummary() {
   const productsCount = await prisma.product.count();
   const usersCount = await prisma.user.count();
 
-  // Calculate total sales
+  // Calculate total sales - unpaid and cancelled orders aren't revenue
   const totalSales = await prisma.order.aggregate({
     _sum: { totalPrice: true },
+    where: { isPaid: true, orderStatus: { not: 'Cancelled' } },
   });
 
   // Get daily sales (default view) for the last 14 days
