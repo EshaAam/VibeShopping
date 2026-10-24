@@ -244,6 +244,5 @@ Database guarantees (append-only events, no order deletes, consistent flags) liv
 
 Built by **[Ekramul Esham](https://github.com/EshaAam)**
 
-If you found this project interesting, a ⭐ is appreciated.
 
 </div>
