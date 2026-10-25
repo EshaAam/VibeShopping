@@ -10,6 +10,7 @@ import { ShippingAddress } from "@/types";
 import { USER_ROLES } from '@/lib/constants';
 import { requireAdmin } from '../auth-guard';
 import { revalidatePath } from 'next/cache';
+import { cookies } from "next/headers";
 
 export async function signInWithCredentials(
   prevState: unknown,
@@ -73,6 +74,12 @@ export async function signUpUser(prevState: unknown, formData: FormData) {
 
 // Sign the user out
 export async function signOutUser() {
+  // Drop the guest cart/wishlist ids so the next person on this browser
+  // starts fresh; the middleware mints new ones on the next request.
+  const cookieStore = await cookies();
+  cookieStore.delete("sessionCartId");
+  cookieStore.delete("sessionWishlistId");
+
   await signOut();
 }
 

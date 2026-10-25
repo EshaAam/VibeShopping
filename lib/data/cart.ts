@@ -22,7 +22,10 @@ export async function getMyCart() {
 
   // Get user cart from database
   const cart = await prisma.cart.findFirst({
-    where: userId ? { userId: userId } : { sessionCartId: sessionCartId },
+    // A guest only gets a cart no account has claimed. The cookie outlives
+    // sign-out, so matching on it alone would hand the next person on this
+    // browser the previous user's cart.
+    where: userId ? { userId: userId } : { sessionCartId: sessionCartId, userId: null },
   });
 
   if (!cart) return undefined;

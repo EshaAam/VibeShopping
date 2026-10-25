@@ -88,6 +88,8 @@ export const config = {
                 sessionCartId,
                 OR: [{ userId: null }, { userId: user.id }],
               },
+              // If both exist, the guest cart on this device wins
+              orderBy: { userId: { sort: "asc", nulls: "first" } },
             });
 
             if (sessionCart) {
@@ -113,6 +115,7 @@ export const config = {
                 sessionWishlistId,
                 OR: [{ userId: null }, { userId: user.id }],
               },
+              orderBy: { userId: { sort: "asc", nulls: "first" } },
             });
 
             if (sessionWishlist) {

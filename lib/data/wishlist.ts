@@ -40,7 +40,8 @@ export async function getMyWishlist() {
     const userId = session?.user?.id;
 
     const wishlist = await prisma.wishlist.findFirst({
-      where: userId ? { userId } : { sessionWishlistId },
+      // Guests only get an unclaimed wishlist - same reason as getMyCart
+      where: userId ? { userId } : { sessionWishlistId, userId: null },
     });
 
     if (!wishlist) return undefined;

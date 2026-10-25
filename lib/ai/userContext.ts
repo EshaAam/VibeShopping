@@ -40,7 +40,8 @@ async function getCartSummary(
   if (!userId && !sessionCartId) return null;
 
   const cart = await prisma.cart.findFirst({
-    where: userId ? { userId } : { sessionCartId: sessionCartId! },
+    // Guests only see an unclaimed cart, never a signed-out user's
+    where: userId ? { userId } : { sessionCartId: sessionCartId!, userId: null },
     select: { items: true, itemsPrice: true, totalPrice: true },
   });
 
