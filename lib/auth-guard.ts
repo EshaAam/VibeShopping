@@ -9,8 +9,18 @@ export async function requireUser() {
   const session = await auth();
   const id = session?.user?.id;
   if (!session || !id) throw new Error('User is not authenticated');
-  // Re-spread so callers get `user.id: string` rather than `string | undefined`
-  return { ...session, user: { ...session.user, id } };
+
+  // The session is a 30-day JWT, so its role is a snapshot from sign-in.
+  // Re-read the account: a demoted admin loses admin rights immediately, and a
+  // deleted account stops working even while its cookie is still valid.
+  const account = await prisma.user.findUnique({
+    where: { id },
+    select: { role: true },
+  });
+  if (!account) throw new Error('User is not authenticated');
+
+  // Re-spread so callers get `user.id: string` and the current role
+  return { ...session, user: { ...session.user, id, role: account.role } };
 }
 
 export async function requireAdmin() {
@@ -19,6 +29,16 @@ export async function requireAdmin() {
     throw new Error('Unauthorized: Admin access required');
   }
   return session;
+}
+
+/** Non-throwing check for pages that redirect instead of erroring. */
+export async function isAdmin() {
+  try {
+    await requireAdmin();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // Load an order the caller is allowed to act on. Someone else's order gets

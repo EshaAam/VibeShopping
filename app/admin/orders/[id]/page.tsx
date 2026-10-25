@@ -2,7 +2,7 @@ import { getOrderById } from '@/lib/data/order';
 import { notFound, redirect } from 'next/navigation';
 import { Order, ShippingAddress } from '@/types';
 import AdminOrderDetailsTable from './admin-order-details-table';
-import { auth } from '@/auth';
+import { isAdmin } from '@/lib/auth-guard';
 
 export const metadata = {
   title: 'Admin - Order Details',
@@ -16,10 +16,8 @@ const AdminOrderDetailsPage = async (props: {
   const params = await props.params;
   const { id } = params;
 
-  const session = await auth();
-  
   // Only admins can access this page
-  if (!session || session.user.role !== 'admin') {
+  if (!(await isAdmin())) {
     redirect('/');
   }
 

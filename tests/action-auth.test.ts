@@ -26,13 +26,31 @@ function forbidden(name: string) {
 
 const authMock = vi.hoisted(() => vi.fn());
 
+// The auth guard re-reads the caller's role from the database - the one query
+// allowed before the check. Every other table access still fails the test.
+const userLookup = vi.hoisted(() =>
+  vi.fn(async ({ where }: { where: { id: string } }) =>
+    where.id === 'user-1' ? { role: 'user' } : null
+  )
+);
+
 vi.mock('server-only', () => ({}));
 vi.mock('@/auth', () => ({
   auth: authMock,
   signIn: vi.fn(),
   signOut: vi.fn(),
 }));
-vi.mock('@/db/prisma', () => ({ prisma: forbidden('prisma') }));
+vi.mock('@/db/prisma', () => ({
+  prisma: new Proxy(
+    {},
+    {
+      get(_, table) {
+        if (table === 'user') return { findUnique: userLookup };
+        return forbidden(`prisma.${String(table)}`);
+      },
+    }
+  ),
+}));
 vi.mock('@/lib/stripe', () => ({ stripe: forbidden('stripe') }));
 vi.mock('next/headers', () => ({
   cookies: async () => ({ get: () => undefined, set: vi.fn(), delete: vi.fn() }),

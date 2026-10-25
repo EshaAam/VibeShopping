@@ -1,4 +1,4 @@
-import { auth } from '@/auth';
+import { isAdmin } from '@/lib/auth-guard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getOrderSummary } from '@/lib/data/order';
 import { formatCurrency, formatDateTime, formatNumber } from '@/lib/utils';
@@ -21,10 +21,8 @@ export const metadata: Metadata = {
 };
 
 const AdminOverviewPage = async () => {
-  const session = await auth();
-
   // Make sure the user is an admin
-  if (!session || session?.user.role !== 'admin') {
+  if (!(await isAdmin())) {
     redirect('/');
   }
 

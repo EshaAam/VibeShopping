@@ -4,12 +4,20 @@ import Link from 'next/link';
 import Menu from '@/components/shared/header/menu';
 import MainNav from './main-nav';
 import AdminSearch from '@/components/shared/admin/admin-search';
+import { isAdmin } from '@/lib/auth-guard';
+import { redirect } from 'next/navigation';
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // The middleware checks the session's role, which is a snapshot from sign-in.
+  // This checks the account as it is now, so a demoted admin is turned away.
+  if (!(await isAdmin())) {
+    redirect('/');
+  }
+
   return (
     <>
       <div className='flex flex-col'>

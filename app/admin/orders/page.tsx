@@ -1,4 +1,4 @@
-import { auth } from '@/auth';
+import { isAdmin } from '@/lib/auth-guard';
 import { getAllOrders } from '@/lib/data/order';
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
@@ -25,8 +25,7 @@ const OrdersPage = async (props: {
   const searchParams = await props.searchParams;
   const { page = '1', query: searchText = '' } = searchParams;
 
-  const session = await auth();
-  if (!session || session?.user.role !== 'admin') {
+  if (!(await isAdmin())) {
     redirect('/');
   }
 
