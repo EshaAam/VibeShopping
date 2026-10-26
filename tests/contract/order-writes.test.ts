@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '../..');
 const ALLOWED = path.join('lib', 'orders.ts');
 const WRITE = /\.(order|orderEvent)\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\(/;
 
