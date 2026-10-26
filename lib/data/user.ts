@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { parsePage } from '@/lib/utils';
 import { prisma } from '@/db/prisma';
 import { Prisma } from '@prisma/client';
 import { PAGE_SIZE } from '@/lib/constants';
@@ -55,7 +56,7 @@ export async function getAllUsers({
     },
     orderBy: { createdAt: 'desc' },
     take: limit,
-    skip: (page - 1) * limit,
+    skip: (parsePage(page) - 1) * limit,
   });
 
   const dataCount = await prisma.user.count({

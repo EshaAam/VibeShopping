@@ -5,7 +5,7 @@ import { getAllCategories, getAllProducts, getPriceRange } from '@/lib/data/prod
 import Link from 'next/link';
 import PriceRangeSlider from '@/components/shared/price-range-slider';
 import { getMyWishlist } from '@/lib/data/wishlist';
-import { convertToPlainObject } from '@/lib/utils';
+import { convertToPlainObject, parsePage, parsePriceRange } from '@/lib/utils';
 import SortDropdown from './sort-dropdown';
 import MobileFilters from './mobile-filters';
 
@@ -64,13 +64,10 @@ const SearchPage = async (props: {
   const wishlist = await getMyWishlist();
 
   // Parse current price filter
-  let currentMinPrice: number | undefined;
-  let currentMaxPrice: number | undefined;
-  if (price !== 'all' && price.includes('-')) {
-    const [minStr, maxStr] = price.split('-');
-    currentMinPrice = Number(minStr);
-    currentMaxPrice = Number(maxStr);
-  }
+  // Ignored (not fatal) when the URL holds something that isn't "min-max"
+  const selectedPrice = parsePriceRange(price);
+  const currentMinPrice = selectedPrice?.min;
+  const currentMaxPrice = selectedPrice?.max;
 
   // Get products
   const productsResult = await getAllProducts({
@@ -78,7 +75,7 @@ const SearchPage = async (props: {
     query: q,
     price,
     rating: 'all',
-    page: Number(page),
+    page: parsePage(page),
     sort,
   });
 

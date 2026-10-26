@@ -4,7 +4,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/db/prisma';
 import { Prisma } from '@prisma/client';
 import { PAGE_SIZE } from '@/lib/constants';
-import { convertToPlainObject } from '@/lib/utils';
+import { convertToPlainObject, parsePage } from '@/lib/utils';
 import { requireAdmin, requireUser } from '@/lib/auth-guard';
 
 // Read-only queries for server components. These are deliberately NOT server
@@ -53,7 +53,7 @@ export async function getMyOrders({
     where: { userId: session.user.id },
     orderBy: { createdAt: 'desc' },
     take: limit,
-    skip: (page - 1) * limit,
+    skip: (parsePage(page) - 1) * limit,
     include: {
       orderItems: true,
       user: { select: { name: true, email: true } },
@@ -100,7 +100,7 @@ export async function getAllOrders({
     },
     orderBy: { createdAt: 'desc' },
     take: limit,
-    skip: (page - 1) * limit,
+    skip: (parsePage(page) - 1) * limit,
     include: {
       orderItems: true,
       user: {

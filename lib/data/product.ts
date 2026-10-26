@@ -3,7 +3,7 @@ import 'server-only';
 import { prisma } from '@/db/prisma';
 import { Prisma } from '@prisma/client';
 import { LATEST_PRODUCTS_LIMIT, PAGE_SIZE } from '@/lib/constants';
-import { convertToPlainObject } from '@/lib/utils';
+import { convertToPlainObject, parsePage, parsePriceRange } from '@/lib/utils';
 
 // Read-only queries for server components. These are deliberately NOT server
 // actions: a 'use server' export is a public POST endpoint, and reads have no
@@ -91,24 +91,21 @@ export async function getAllProducts({
   const categoryFilter =
     category && category !== 'all' ? { category } : {};
 
+  const minRating = Number(rating);
   const ratingFilter =
-    rating && rating !== 'all'
+    rating && rating !== 'all' && Number.isFinite(minRating)
       ? {
           rating: {
-            gte: Number(rating),
+            gte: minRating,
           },
         }
       : {};
 
-  const priceFilter =
-    price && price !== 'all'
-      ? {
-          price: {
-            gte: Number(price.split('-')[0]),
-            lte: Number(price.split('-')[1]),
-          },
-        }
-      : {};
+  const priceRange = parsePriceRange(price);
+  const priceFilter = priceRange
+    ? { price: { gte: priceRange.min, lte: priceRange.max } }
+    : {};
+  const currentPage = parsePage(page);
 
   const data = await prisma.product.findMany({
     where: {
@@ -126,7 +123,7 @@ export async function getAllProducts({
         : sort === 'rating'
         ? { rating: 'desc' }
         : { createdAt: 'desc' },
-    skip: (page - 1) * limit,
+    skip: (currentPage - 1) * limit,
     take: limit,
   });
 

@@ -57,6 +57,23 @@ export const round2 = (value: number | string) => {
   }
 };
 
+// URL params are user input. A page that isn't a whole number of at least 1
+// (e.g. "?page=abc" or "?page=-1") becomes page 1 instead of a broken query.
+export function parsePage(value: unknown): number {
+  const page = Math.floor(Number(value));
+  return Number.isFinite(page) && page >= 1 ? page : 1;
+}
+
+// A "min-max" price filter from the URL, or null unless both ends are valid
+// non-negative numbers in order - a malformed filter is ignored, not fatal.
+export function parsePriceRange(value?: string): { min: number; max: number } | null {
+  const match = /^(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)$/.exec(value?.trim() ?? '');
+  if (!match) return null;
+  const min = Number(match[1]);
+  const max = Number(match[2]);
+  return min <= max ? { min, max } : null;
+}
+
 // Calculate cart/order totals. Callers must pass prices read from the
 // database, never prices sent by the client.
 export const calcPrice = (items: { price: string | number; qty: number }[]) => {
