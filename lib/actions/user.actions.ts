@@ -1,5 +1,5 @@
 "use server";
-import { signIn, signOut, auth } from "@/auth";
+import { signIn, signOut, auth, TooManySignInAttempts } from "@/auth";
 import { signInFormSchema, signUpFormSchema, shippingAddressSchema, paymentMethodSchema, updateUserSchema } from "../validator";
 import { z } from 'zod';
 import { isRedirectError } from "next/dist/client/components/redirect-error";
@@ -29,7 +29,13 @@ export async function signInWithCredentials(
     if (isRedirectError(error)) {
       throw error;
     }
-    return { success: false, message: "Invalid email or username" };
+    if (error instanceof TooManySignInAttempts) {
+      return {
+        success: false,
+        message: "Too many sign-in attempts. Please wait a few minutes and try again.",
+      };
+    }
+    return { success: false, message: "Invalid email or password" };
   }
 }
 

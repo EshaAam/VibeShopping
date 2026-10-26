@@ -11,8 +11,8 @@ describe('validation errors become messages instead of crashing', () => {
     const result = signUpFormSchema.safeParse({
       name: 'Esham',
       email: 'esham@example.com',
-      password: 'secret1',
-      confirmPassword: 'secret2',
+      password: 'secret-one',
+      confirmPassword: 'secret-two',
     });
 
     expect(result.success).toBe(false);
@@ -23,8 +23,8 @@ describe('validation errors become messages instead of crashing', () => {
     const result = signUpFormSchema.safeParse({
       name: 'Al',
       email: 'not-an-email',
-      password: '123456',
-      confirmPassword: '123456',
+      password: '12345678',
+      confirmPassword: '12345678',
     });
 
     const message = formatError(result.error);

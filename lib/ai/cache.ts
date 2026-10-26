@@ -13,6 +13,12 @@
  * that ever matters - the call sites stay identical.
  */
 
+import {
+  checkRateLimit as checkLimit,
+  type RateLimit,
+  type RateLimitResult,
+} from '@/lib/rate-limit';
+
 interface CacheEntry {
   answer: string;
   expiresAt: number;
@@ -62,17 +68,12 @@ export function setCachedResponse(message: string, answer: string): void {
 }
 
 /** Sliding-window limits per visitor. */
-const LIMITS = [
+const CHAT_LIMITS: RateLimit[] = [
   { windowMs: 60 * 1000, max: 5 },
   { windowMs: 60 * 60 * 1000, max: 20 },
 ];
 
-const requestLog = new Map<string, number[]>();
-
-export interface RateLimitResult {
-  allowed: boolean;
-  retryAfterSeconds: number;
-}
+export type { RateLimitResult };
 
 /**
  * Record an attempt and report whether it is allowed.
@@ -80,38 +81,5 @@ export interface RateLimitResult {
  * fast-path answers are free and shouldn't count against anyone.
  */
 export function checkRateLimit(identity: string): RateLimitResult {
-  const now = Date.now();
-  const longestWindow = Math.max(...LIMITS.map((limit) => limit.windowMs));
-
-  const history = (requestLog.get(identity) ?? []).filter(
-    (timestamp) => now - timestamp < longestWindow
-  );
-
-  for (const limit of LIMITS) {
-    const inWindow = history.filter((t) => now - t < limit.windowMs);
-    if (inWindow.length >= limit.max) {
-      const oldest = Math.min(...inWindow);
-      const retryAfterSeconds = Math.ceil(
-        (limit.windowMs - (now - oldest)) / 1000
-      );
-      // Persist the pruned history so the map doesn't grow unbounded.
-      requestLog.set(identity, history);
-      return { allowed: false, retryAfterSeconds };
-    }
-  }
-
-  history.push(now);
-  requestLog.set(identity, history);
-
-  // Opportunistic sweep - keeps a long-lived instance from accumulating
-  // entries for visitors who never came back.
-  if (requestLog.size > 500) {
-    for (const [key, timestamps] of requestLog) {
-      if (timestamps.every((t) => now - t >= longestWindow)) {
-        requestLog.delete(key);
-      }
-    }
-  }
-
-  return { allowed: true, retryAfterSeconds: 0 };
+  return checkLimit('chat', identity, CHAT_LIMITS);
 }

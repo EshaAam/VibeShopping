@@ -1,11 +1,23 @@
 // import { error } from 'console';
-import NextAuth, { NextAuthConfig } from "next-auth";
+import NextAuth, { CredentialsSignin, NextAuthConfig } from "next-auth";
 import { prisma } from "./db/prisma";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compareSync } from "bcrypt-ts-edge";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { checkRateLimit, type RateLimit } from "./lib/rate-limit";
+
+// Brute-force brake on password sign-in. Per email stops guessing one
+// account's password; per IP stops one machine spraying many accounts, set
+// higher because offices and campuses share an address.
+const SIGN_IN_LIMITS_PER_EMAIL: RateLimit[] = [{ windowMs: 15 * 60_000, max: 5 }];
+const SIGN_IN_LIMITS_PER_IP: RateLimit[] = [{ windowMs: 60 * 60_000, max: 30 }];
+
+/** Its `code` reaches the sign-in action, which shows a "try later" message. */
+export class TooManySignInAttempts extends CredentialsSignin {
+  code = "rate_limited";
+}
 
 export const config = {
   pages: {
@@ -25,8 +37,18 @@ export const config = {
         },
         password: { type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (credentials == null) return null;
+
+        // Checked here rather than in the sign-in action, because Auth.js also
+        // exposes this provider directly at /api/auth/callback/credentials.
+        const email = String(credentials.email ?? "").trim().toLowerCase();
+        const ip =
+          request?.headers?.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          "unknown";
+        const byEmail = checkRateLimit("sign-in:email", email, SIGN_IN_LIMITS_PER_EMAIL);
+        const byIp = checkRateLimit("sign-in:ip", ip, SIGN_IN_LIMITS_PER_IP);
+        if (!byEmail.allowed || !byIp.allowed) throw new TooManySignInAttempts();
 
         // Find user in database
         const user = await prisma.user.findFirst({

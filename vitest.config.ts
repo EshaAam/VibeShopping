@@ -8,5 +8,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    // next-auth imports "next/server" without an extension, which plain Node
+    // can't resolve outside a Next build; let Vite resolve it instead.
+    server: { deps: { inline: ['next-auth'] } },
   },
 });
