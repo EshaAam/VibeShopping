@@ -11,7 +11,8 @@ import { insertOrderSchema } from '../validator';
 import { prisma } from '@/db/prisma';
 import { CartItem } from '@/types';
 import { revalidatePath } from 'next/cache';
-import { createOrderRecord, recordPayment, transitionOrder } from '@/lib/orders';
+import { ORDER_TRANSITIONS, createOrderRecord, recordPayment, transitionOrder } from '@/lib/orders';
+import { refundStripePayment } from '@/lib/payments';
 
 // Create an order
 export async function createOrder() {
@@ -173,6 +174,46 @@ export async function deliverOrder(orderId: string) {
   }
 }
 
+/**
+ * Cancel an order, giving the money back first if it was paid.
+ *
+ * Order matters: check the move is allowed, refund, then cancel. If the refund
+ * fails the order is left untouched, so it can never end up cancelled while the
+ * customer is still charged. If the refund succeeds but the cancel then fails,
+ * retrying is safe - Stripe's idempotency key returns the same refund.
+ */
+async function cancelWithRefund(orderId: string, actorId: string) {
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  if (!order) throw new Error('Order not found');
+  if (!ORDER_TRANSITIONS[order.orderStatus].includes('Cancelled')) {
+    throw new Error(`Cannot cancel an order that is ${order.orderStatus}`);
+  }
+
+  const refund = await refundStripePayment(order);
+  // Paid but not through Stripe (cash on delivery) - an admin has to hand the
+  // money back, so the history says so.
+  const manualRefund = order.isPaid && !refund;
+
+  await prisma.$transaction((tx) =>
+    transitionOrder(tx, orderId, 'Cancelled', {
+      actorId,
+      eventData: refund
+        ? { refund }
+        : manualRefund
+          ? { refund: 'manual', amount: order.totalPrice.toString() }
+          : undefined,
+    })
+  );
+
+  if (refund) {
+    return `Order cancelled and $${refund.amount} refunded to the customer`;
+  }
+  if (manualRefund) {
+    return 'Order cancelled. It was paid in cash, so refund the customer manually.';
+  }
+  return 'Order has been cancelled successfully';
+}
+
 // Update Order Status (Admin)
 export async function updateOrderStatus(
   orderId: string,
@@ -184,6 +225,13 @@ export async function updateOrderStatus(
 
     if (newStatus === 'Pending') {
       throw new Error('Cannot move an order back to Pending');
+    }
+
+    if (newStatus === 'Cancelled') {
+      const message = await cancelWithRefund(orderId, session.user.id);
+      revalidatePath(`/order/${orderId}`);
+      revalidatePath('/admin/orders');
+      return { success: true, message };
     }
 
     // Validation, the status update and the history row all happen together
@@ -223,17 +271,14 @@ export async function cancelOrder(orderId: string) {
       throw new Error('Cannot cancel order: Order has already been shipped or delivered');
     }
 
-    await prisma.$transaction((tx) =>
-      transitionOrder(tx, orderId, 'Cancelled', { actorId: session.user.id })
-    );
+    // Customers only reach here for unpaid orders; an admin cancelling a
+    // paid one gets it refunded first.
+    const message = await cancelWithRefund(orderId, session.user.id);
 
     revalidatePath(`/order/${orderId}`);
     revalidatePath('/user/orders');
 
-    return {
-      success: true,
-      message: 'Order has been cancelled successfully',
-    };
+    return { success: true, message };
   } catch (error) {
     return { success: false, message: formatError(error) };
   }

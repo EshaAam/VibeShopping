@@ -29,9 +29,16 @@ function reachedAt(events: OrderEvent[] | undefined, status: string) {
   return events?.find((event) => event.type === type)?.createdAt;
 }
 
-function trackingOf(event: OrderEvent) {
-  const data = event.data as { trackingNumber?: string } | null | undefined;
-  return data?.trackingNumber;
+// The short detail shown next to a history row: tracking number or refund
+function detailOf(event: OrderEvent) {
+  const data = event.data as
+    | { trackingNumber?: string; refund?: { amount?: string } | 'manual'; amount?: string }
+    | null
+    | undefined;
+  if (data?.trackingNumber) return data.trackingNumber;
+  if (data?.refund === 'manual') return `refund $${data.amount} manually`;
+  if (data?.refund?.amount) return `$${data.refund.amount} refunded`;
+  return undefined;
 }
 
 function OrderHistory({ events }: { events?: OrderEvent[] }) {
@@ -43,8 +50,8 @@ function OrderHistory({ events }: { events?: OrderEvent[] }) {
         <li key={event.id} className="flex justify-between gap-4">
           <span>
             {EVENT_LABELS[event.type]}
-            {trackingOf(event) && (
-              <span className="text-muted-foreground"> · {trackingOf(event)}</span>
+            {detailOf(event) && (
+              <span className="text-muted-foreground"> · {detailOf(event)}</span>
             )}
           </span>
           <span className="text-muted-foreground shrink-0">

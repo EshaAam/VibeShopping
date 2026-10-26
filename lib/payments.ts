@@ -4,6 +4,7 @@ import type Stripe from 'stripe';
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/db/prisma';
 import { recordPayment } from '@/lib/orders';
+import { stripe } from '@/lib/stripe';
 
 export type MarkPaidResult =
   | { status: 'paid' | 'already-paid'; orderId: string }
@@ -68,4 +69,42 @@ export async function markOrderPaid(
   revalidatePath(`/order/${orderId}`);
 
   return { status: paid ? 'paid' : 'already-paid', orderId };
+}
+
+export type RefundResult = { refundId: string; amount: string; status: string | null };
+
+/**
+ * Refund a paid Stripe order in full. Returns null when there is nothing to
+ * refund through Stripe (unpaid, or paid some other way).
+ *
+ * The idempotency key is per order, so a retried cancel - or two admins
+ * cancelling at the same moment - returns the same refund instead of paying
+ * the customer back twice.
+ */
+export async function refundStripePayment(order: {
+  id: string;
+  isPaid: boolean;
+  paymentMethod: string;
+  paymentResult: unknown;
+}): Promise<RefundResult | null> {
+  const paymentIntentId = (order.paymentResult as { id?: unknown } | null)?.id;
+  if (
+    !order.isPaid ||
+    order.paymentMethod !== 'Stripe' ||
+    typeof paymentIntentId !== 'string' ||
+    !paymentIntentId.startsWith('pi_')
+  ) {
+    return null;
+  }
+
+  const refund = await stripe.refunds.create(
+    { payment_intent: paymentIntentId, metadata: { orderId: order.id } },
+    { idempotencyKey: `refund-order-${order.id}` }
+  );
+
+  return {
+    refundId: refund.id,
+    amount: (refund.amount / 100).toFixed(2),
+    status: refund.status,
+  };
 }

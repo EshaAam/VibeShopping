@@ -40,7 +40,16 @@ export async function transitionOrder(
   tx: Tx,
   orderId: string,
   to: Exclude<OrderStatus, 'Pending'>,
-  { actorId, trackingNumber }: { actorId: string | null; trackingNumber?: string }
+  {
+    actorId,
+    trackingNumber,
+    eventData,
+  }: {
+    actorId: string | null;
+    trackingNumber?: string;
+    /** Extra details stored on the history row, e.g. the refund. */
+    eventData?: Prisma.InputJsonObject;
+  }
 ) {
   const order = await tx.order.findUnique({ where: { id: orderId } });
   if (!order) throw new Error('Order not found');
@@ -77,7 +86,10 @@ export async function transitionOrder(
       orderId,
       type: to as OrderEventType,
       actorId,
-      data: trackingNumber ? { trackingNumber } : undefined,
+      data:
+        trackingNumber || eventData
+          ? { ...eventData, ...(trackingNumber ? { trackingNumber } : {}) }
+          : undefined,
     },
   });
 }
