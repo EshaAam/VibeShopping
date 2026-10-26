@@ -158,10 +158,7 @@ export async function deliverOrder(orderId: string) {
   try {
     const session = await requireAdmin();
 
-    const order = await prisma.order.findFirst({ where: { id: orderId } });
-    if (!order) throw new Error('Order not found');
-    if (!order.isPaid) throw new Error('Order is not paid');
-
+    // transitionOrder checks the order exists, is Shipped, and is paid
     await prisma.$transaction((tx) =>
       transitionOrder(tx, orderId, 'Delivered', { actorId: session.user.id })
     );

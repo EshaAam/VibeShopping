@@ -58,6 +58,11 @@ export async function transitionOrder(
   if (!ORDER_TRANSITIONS[from].includes(to)) {
     throw new Error(`Cannot change status from ${from} to ${to}`);
   }
+  // Checked here rather than in each action, so the status dropdown and the
+  // "mark delivered" button can't disagree about it
+  if (to === 'Delivered' && !order.isPaid) {
+    throw new Error('Order is not paid');
+  }
 
   const updated = await tx.order.updateMany({
     where: { id: orderId, orderStatus: from },

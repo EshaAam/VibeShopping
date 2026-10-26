@@ -33,21 +33,29 @@ const responseCache = new Map<string, CacheEntry>();
 /**
  * Normalise so trivial variations share a cache slot:
  * "Do you have Nike shoes?" and "do you have nike shoes" are one question.
+ *
+ * Keeps letters, combining marks and digits from every script. An ASCII-only
+ * filter turned every Bangla message into "", so they all shared one slot and
+ * customers got answers to someone else's question.
  */
 function cacheKey(message: string): string {
   return message
+    .normalize('NFC')
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/[^\p{L}\p{M}\p{N}\s]/gu, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
 export function getCachedResponse(message: string): string | null {
-  const entry = responseCache.get(cacheKey(message));
+  const key = cacheKey(message);
+  if (!key) return null;
+
+  const entry = responseCache.get(key);
   if (!entry) return null;
 
   if (entry.expiresAt <= Date.now()) {
-    responseCache.delete(cacheKey(message));
+    responseCache.delete(key);
     return null;
   }
 
@@ -55,13 +63,17 @@ export function getCachedResponse(message: string): string | null {
 }
 
 export function setCachedResponse(message: string, answer: string): void {
+  // Nothing left to tell questions apart by (e.g. only emoji) - don't share it
+  const key = cacheKey(message);
+  if (!key) return;
+
   // Map preserves insertion order, so the first key is the oldest.
   if (responseCache.size >= CACHE_MAX_ENTRIES) {
     const oldest = responseCache.keys().next().value;
     if (oldest !== undefined) responseCache.delete(oldest);
   }
 
-  responseCache.set(cacheKey(message), {
+  responseCache.set(key, {
     answer,
     expiresAt: Date.now() + CACHE_TTL_MS,
   });
