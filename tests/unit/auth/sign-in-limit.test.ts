@@ -3,13 +3,16 @@
  * forever. The limit lives in authorize() because Auth.js also exposes the
  * credentials provider directly, bypassing the sign-in form's action.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { userFindFirst } = vi.hoisted(() => ({ userFindFirst: vi.fn(async () => null) }));
 
 vi.mock('@/db/prisma', () => ({ prisma: { user: { findFirst: userFindFirst } } }));
 vi.mock('./db/prisma', () => ({ prisma: { user: { findFirst: userFindFirst } } }));
 vi.mock('@auth/prisma-adapter', () => ({ PrismaAdapter: () => ({}) }));
+// Every attempt now runs a full bcrypt comparison (see credentials.test.ts);
+// these tests count attempts, so a fast stand-in keeps 30 of them quick.
+vi.mock('bcrypt-ts-edge', () => ({ compareSync: () => false }));
 
 type Authorize = (credentials: Record<string, string>, request: Request) => Promise<unknown>;
 
@@ -22,6 +25,12 @@ async function loadAuthorize() {
 }
 
 const fromIp = (ip: string) => new Request('http://localhost', { headers: { 'x-forwarded-for': ip } });
+
+// The first import of Auth.js is slow (transform + init); pay it once here so
+// the per-test module reloads below are quick and tests measure only themselves.
+beforeAll(async () => {
+  await import('@/auth');
+}, 30_000);
 
 beforeEach(() => vi.clearAllMocks());
 
