@@ -137,8 +137,11 @@ export async function getUserContext(): Promise<UserContext> {
  * order status must not leak to the next visitor who phrases it the same way.
  */
 export function isPersonalQuestion(message: string): boolean {
-  return /\b(my|mine|i|i'm|im|me)\b/i.test(message) ||
-    /\b(order|orders|cart|checkout|wishlist|account|delivery|tracking|refund)\b/i.test(
+  // Deliberately not "me" or "I": "show me laptops" and "I need shoes" are
+  // generic. Missing a personal question can't leak anything - the generic
+  // path loads no one's data - it only answers less personally.
+  return /\b(my|mine)\b/i.test(message) ||
+    /\b(order|orders|cart|basket|checkout|wishlist|account|delivery|tracking|package|parcel|shipment|refund|purchase|purchased|bought)\b/i.test(
       message
     );
 }

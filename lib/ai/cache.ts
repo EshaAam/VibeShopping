@@ -79,10 +79,19 @@ export function setCachedResponse(message: string, answer: string): void {
   });
 }
 
-/** Sliding-window limits per visitor. */
-const CHAT_LIMITS: RateLimit[] = [
+/** Sliding-window limits per browser (its cart cookie). */
+const CHAT_LIMITS_PER_VISITOR: RateLimit[] = [
   { windowMs: 60 * 1000, max: 5 },
   { windowMs: 60 * 60 * 1000, max: 20 },
+];
+
+/**
+ * Per network address. Looser, since an office or campus shares one, but it
+ * caps a client that sends a fresh cookie with every request.
+ */
+const CHAT_LIMITS_PER_IP: RateLimit[] = [
+  { windowMs: 60 * 1000, max: 15 },
+  { windowMs: 60 * 60 * 1000, max: 60 },
 ];
 
 export type { RateLimitResult };
@@ -91,7 +100,20 @@ export type { RateLimitResult };
  * Record an attempt and report whether it is allowed.
  * Only called for requests that would actually hit Gemini - cached and
  * fast-path answers are free and shouldn't count against anyone.
+ *
+ * The browser is checked first, so one visitor over their own limit is turned
+ * away without using up the allowance of everyone else on their network.
  */
-export function checkRateLimit(identity: string): RateLimitResult {
-  return checkLimit('chat', identity, CHAT_LIMITS);
+export function checkRateLimit({
+  visitor,
+  ip,
+}: {
+  visitor?: string;
+  ip: string;
+}): RateLimitResult {
+  if (visitor) {
+    const byVisitor = checkLimit('chat', visitor, CHAT_LIMITS_PER_VISITOR);
+    if (!byVisitor.allowed) return byVisitor;
+  }
+  return checkLimit('chat:ip', ip, CHAT_LIMITS_PER_IP);
 }

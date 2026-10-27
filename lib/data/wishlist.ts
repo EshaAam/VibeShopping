@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { prisma } from '@/db/prisma';
 import { WishlistItem } from '@/types';
 import { cookies } from 'next/headers';
+import { unstable_rethrow } from 'next/navigation';
 import { z } from 'zod';
 
 // Read-only queries for server components. These are deliberately NOT server
@@ -58,6 +59,9 @@ export async function getMyWishlist() {
       updatedAt: wishlist.updatedAt,
     };
   } catch (error) {
+    // Let Next.js's own control-flow errors through (e.g. "this page uses
+    // cookies, render it dynamically") instead of logging them as failures
+    unstable_rethrow(error);
     console.error('Error in getMyWishlist:', error);
     return undefined;
   }
@@ -68,7 +72,12 @@ export async function getSharedWishlist(wishlistId: string) {
   try {
     const wishlist = await prisma.wishlist.findFirst({
       where: { id: wishlistId },
-      include: {
+      // Public page: no session or account ids, same as getSharedCart
+      select: {
+        id: true,
+        items: true,
+        createdAt: true,
+        updatedAt: true,
         user: { select: { name: true } },
       },
     });
@@ -79,7 +88,6 @@ export async function getSharedWishlist(wishlistId: string) {
 
     return {
       id: wishlist.id,
-      userId: wishlist.userId,
       items,
       createdAt: wishlist.createdAt,
       updatedAt: wishlist.updatedAt,

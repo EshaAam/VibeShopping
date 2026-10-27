@@ -46,16 +46,25 @@ export async function getSharedCart(cartId: string) {
   try {
     const cart = await prisma.cart.findFirst({
       where: { id: cartId },
-      include: {
+      // Only what the share page shows. sessionCartId is the key to a guest's
+      // cart, so it must never leave the server.
+      select: {
+        id: true,
+        items: true,
+        itemsPrice: true,
+        shippingPrice: true,
+        taxPrice: true,
+        totalPrice: true,
         user: { select: { name: true } },
       },
     });
 
     if (!cart) return undefined;
 
+    const { user, ...shared } = cart;
     return {
-      ...convertToPlainObject(cart),
-      userName: cart.user?.name || 'Someone',
+      ...convertToPlainObject(shared),
+      userName: user?.name || 'Someone',
     };
   } catch {
     return undefined;

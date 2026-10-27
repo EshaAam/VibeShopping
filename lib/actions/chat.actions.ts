@@ -21,7 +21,7 @@
  * Stage 7 is why a quota error should never reach the customer in production.
  */
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { buildPrompt, type ChatTurn } from '@/lib/ai/systemPrompt';
 import { tryFastPath } from '@/lib/ai/fastPath';
 import { sanitizeProductLinks } from '@/lib/ai/linkGuard';
@@ -138,9 +138,15 @@ export async function sendChatMessage(
 
   try {
     const isPersonal = isPersonalQuestion(trimmedMessage);
+    const safeHistory = sanitizeHistory(history);
+
+    // Only a standalone generic question has one right answer for everyone. A
+    // personal one depends on who asks, and a follow-up ("which one is
+    // cheaper?") on the conversation before it.
+    const cacheable = !isPersonal && safeHistory.length === 0;
 
     // Personal questions need the cart/order lookup; generic ones skip it,
-    // which keeps the prompt smaller and the answer cacheable.
+    // which keeps the prompt smaller.
     const userContext = isPersonal ? await getUserContext() : EMPTY_CONTEXT;
 
     // ---- 2. Fast path - free, instant ------------------------------------
@@ -149,10 +155,10 @@ export async function sendChatMessage(
       return { success: true, message: fastPath.answer, source: 'fast-path' };
     }
 
-    // ---- 3. Cache - generic questions only -------------------------------
+    // ---- 3. Cache - standalone generic questions only ---------------------
     // Personal answers are never cached: one customer's order status must not
     // be replayed to the next visitor asking the same way.
-    if (!isPersonal) {
+    if (cacheable) {
       const cached = getCachedResponse(trimmedMessage);
       if (cached) {
         return { success: true, message: cached, source: 'cache' };
@@ -177,9 +183,13 @@ export async function sendChatMessage(
     }
 
     // ---- 5. Rate limit - only for calls that reach Gemini -----------------
+    // Counted per browser and per network. The cart cookie comes from the
+    // client, so a new one on every request would otherwise reset the count.
+    // On Vercel the first x-forwarded-for entry is set by the platform.
     const sessionCartId = (await cookies()).get('sessionCartId')?.value;
-    const identity = sessionCartId ?? 'anonymous';
-    const rateLimit = checkRateLimit(identity);
+    const ip =
+      (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    const rateLimit = checkRateLimit({ visitor: sessionCartId, ip });
 
     if (!rateLimit.allowed) {
       return {
@@ -192,7 +202,7 @@ export async function sendChatMessage(
     // ---- 6. Generate, failing over across keys and models -----------------
     const prompt = buildPrompt({
       userMessage: trimmedMessage,
-      history: sanitizeHistory(history),
+      history: safeHistory,
       products,
       catalog,
       userContext: isPersonal ? formatUserContext(userContext) : null,
@@ -205,7 +215,7 @@ export async function sendChatMessage(
     // link can't be stored and replayed.
     const text = sanitizeProductLinks(raw, products);
 
-    if (!isPersonal) {
+    if (cacheable) {
       setCachedResponse(trimmedMessage, text);
     }
 

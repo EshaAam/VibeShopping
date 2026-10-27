@@ -18,6 +18,8 @@ export async function checkIfUserPurchasedProduct(productId: string) {
       order: {
         userId: session.user.id,
         isPaid: true,
+        // A cancelled order has been refunded, so it is no longer a purchase
+        orderStatus: { not: 'Cancelled' },
       },
     },
   });
