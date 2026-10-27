@@ -50,3 +50,8 @@ next-env.d.ts
 /project-description.txt
 /best_practices.md
 
+
+# test output
+/test-results
+/playwright-report
+/blob-report

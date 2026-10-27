@@ -15,6 +15,17 @@ export default defineConfig({
     projects: [
       { extends: true, test: { name: 'unit', include: ['tests/unit/**/*.test.ts'] } },
       { extends: true, test: { name: 'contract', include: ['tests/contract/**/*.test.ts'] } },
+      {
+        extends: true,
+        test: {
+          name: 'integration',
+          include: ['tests/integration/**/*.test.ts'],
+          globalSetup: ['tests/integration/setup/global-setup.ts'],
+          setupFiles: ['tests/integration/setup/mocks.ts'],
+          testTimeout: 30_000,
+          hookTimeout: 60_000,
+        },
+      },
     ],
   },
 });
