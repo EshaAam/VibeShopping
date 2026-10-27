@@ -11,8 +11,18 @@ import { insertOrderSchema } from '../validator';
 import { prisma } from '@/db/prisma';
 import { CartItem } from '@/types';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { ORDER_TRANSITIONS, createOrderRecord, recordPayment, transitionOrder } from '@/lib/orders';
 import { refundStripePayment } from '@/lib/payments';
+
+// The "Place Order" button. Redirects from the server (to the new order, or
+// back to the checkout step that is missing) rather than handing a URL to a
+// client router.push(), which Next.js 15 can drop while the action settles.
+export async function placeOrder() {
+  const res = await createOrder();
+  if (res.redirectTo) redirect(res.redirectTo);
+  return res;
+}
 
 // Create an order
 export async function createOrder() {
@@ -37,6 +47,24 @@ export async function createOrder() {
     }
 
     const insertedOrderId = await prisma.$transaction(async (tx) => {
+      // Claim the cart first, conditional on the version we read. A second
+      // click that read the same cart waits on this row, then matches nothing
+      // and rolls back - one order, not two.
+      const claimed = await tx.cart.updateMany({
+        where: { id: cart.id, version: cart.version },
+        data: {
+          items: [],
+          totalPrice: 0,
+          shippingPrice: 0,
+          taxPrice: 0,
+          itemsPrice: 0,
+          version: { increment: 1 },
+        },
+      });
+      if (claimed.count === 0) {
+        throw new Error('Your cart changed while placing the order. Please review it and try again.');
+      }
+
       // Re-price every line from the database and reserve its stock. The
       // conditional decrement is atomic, so two buyers can't both get the last
       // unit - the second one updates zero rows and the order rolls back.
@@ -80,16 +108,6 @@ export async function createOrder() {
           ...item,
           orderId: insertedOrder.id,
         })),
-      });
-      await tx.cart.update({
-        where: { id: cart.id },
-        data: {
-          items: [],
-          totalPrice: 0,
-          shippingPrice: 0,
-          taxPrice: 0,
-          itemsPrice: 0,
-        },
       });
 
       return insertedOrder.id;

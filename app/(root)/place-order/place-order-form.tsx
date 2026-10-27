@@ -1,17 +1,18 @@
 'use client';
 import { Check, Loader } from 'lucide-react';
 import { useFormStatus } from 'react-dom';
-import { createOrder } from '@/lib/actions/order.actions';
-import { useRouter } from 'next/navigation';
+import { placeOrder } from '@/lib/actions/order.actions';
+import { useToast } from '@/hooks/use-toast';
 
 const PlaceOrderForm = () => {
-  const router = useRouter();
+  const { toast } = useToast();
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault(); 
-    const res = await createOrder();
-    if (res.redirectTo) {
-      router.push(res.redirectTo);
+  // The action redirects from the server - to the new order, or back to a
+  // missing checkout step - so anything it returns is an error to show.
+  const handleSubmit = async () => {
+    const res = await placeOrder();
+    if (res && !res.success) {
+      toast({ variant: 'destructive', description: res.message });
     }
   };
 
@@ -30,7 +31,7 @@ const PlaceOrderForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className='w-full'>
+    <form action={handleSubmit} className='w-full'>
       <PlaceOrderButton />
     </form>
   );

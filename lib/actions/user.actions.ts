@@ -11,6 +11,7 @@ import { USER_ROLES } from '@/lib/constants';
 import { requireAdmin } from '../auth-guard';
 import { revalidatePath } from 'next/cache';
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 export async function signInWithCredentials(
   prevState: unknown,
@@ -147,6 +148,22 @@ export async function updateUserPaymentMethod(
   } catch (error) {
     return { success: false, message: formatError(error) };
   }
+}
+
+// Checkout steps. These redirect from the server instead of returning to a
+// client router.push(): Next.js 15 can drop a push that starts while the
+// action is still settling in its router queue, leaving "Continue" spinning
+// after the save succeeded. A redirect travels with the action's own response.
+export async function saveShippingAddress(data: ShippingAddress) {
+  const res = await updateUserAddress(data);
+  if (res.success) redirect('/payment-method');
+  return res;
+}
+
+export async function savePaymentMethod(data: z.infer<typeof paymentMethodSchema>) {
+  const res = await updateUserPaymentMethod(data);
+  if (res.success) redirect('/place-order');
+  return res;
 }
 
 // Update User Profile

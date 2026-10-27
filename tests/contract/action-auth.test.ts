@@ -87,6 +87,9 @@ const PUBLIC = new Set([
 /** Any signed-in user may call these; they scope themselves to that user. */
 const SIGNED_IN = new Set([
   'createOrder',
+  'placeOrder',
+  'saveShippingAddress',
+  'savePaymentMethod',
   'cancelOrder',
   'createStripePaymentIntent',
   'confirmStripePayment',

@@ -11,12 +11,11 @@ import {
 } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
-import { updateUserPaymentMethod } from '@/lib/actions/user.actions';
+import { savePaymentMethod } from '@/lib/actions/user.actions';
 import { DEFAULT_PAYMENT_METHOD, PAYMENT_METHODS } from '@/lib/constants';
 import { paymentMethodSchema } from '@/lib/validator';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowRight, Loader } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -26,7 +25,6 @@ const PaymentMethodForm = ({
 }: {
   preferredPaymentMethod: string | null;
 }) => {
-  const router = useRouter();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof paymentMethodSchema>>({
@@ -40,18 +38,15 @@ const PaymentMethodForm = ({
 
   async function onSubmit(values: z.infer<typeof paymentMethodSchema>) {
     startTransition(async () => {
-      const res = await updateUserPaymentMethod(values);
+      // Redirects to /place-order from the server once saved
+      const res = await savePaymentMethod(values);
 
-      if (!res.success) {
+      if (res && !res.success) {
         toast({
           variant: 'destructive',
           description: res.message,
         });
-
-        return;
       }
-
-      router.push('/place-order');
     });
   }
 
